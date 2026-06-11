@@ -1,0 +1,15 @@
+name: Deploy Application
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Execute Deployment Script on VMWare
+        run: |
+          powershell.exe -File C:\laragon\www\deploy.ps1

@@ -20,9 +20,17 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Implicitly grant "Developer" role all permissions
+        // Implicitly grant "Developer" role all permissions, and also check custom legacy permissions
         Gate::before(function ($user, $ability) {
-            return strtolower($user->role) === 'developer' ? true : null;
+            if (strtolower($user->role) === 'developer' || strtolower($user->role) === 'administrator' || strtolower($user->role) === 'admin') {
+                return true;
+            }
+            
+            if (method_exists($user, 'hasPermission') && $user->hasPermission($ability)) {
+                return true;
+            }
+            
+            return null;
         });
     }
 }

@@ -73,7 +73,7 @@ class TripLogController extends Controller
     /**
      * Fetch a specific trip's execution details (GPS logs & Incidents)
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         try {
             // 1. Get Base Trip Details
@@ -100,7 +100,7 @@ class TripLogController extends Controller
                 return response()->json(['message' => 'Trip not found'], 404);
             }
 
-            $user = auth()->user();
+            $user = $request->user();
             if (!$user->hasPermission('trip.view') && strtolower($user->role) !== 'developer') {
                 if ((int)$trip->driver_id !== (int)$user->id) {
                     return response()->json(['message' => 'Unauthorized access to trip data.'], 403);

@@ -26,7 +26,8 @@ class TripLogController extends Controller
                     'trips.created_at',
                     'vehicles.unit_id as vehicle_unit',
                     DB::raw("CONCAT(drivers.first_name, ' ', drivers.last_name) as driver_name")
-                );
+                )
+                ->whereNull('trips.deleted_at');
 
             // 0. Driver Data Isolation
             $user = $request->user();
@@ -92,6 +93,7 @@ class TripLogController extends Controller
                     DB::raw("CONCAT(drivers.first_name, ' ', drivers.last_name) as driver_name")
                 )
                 ->where('trips.id', $id)
+                ->whereNull('trips.deleted_at')
                 ->first();
 
             if (!$trip) {
@@ -142,12 +144,12 @@ public function destroy(Request $request, $id)
             // CRITICAL FIX: Mirrors the ChecklistController comma-separated logic
             if (strpos($id, ',') !== false) {
                 $ids = explode(',', $id);
-                \App\Models\Trip::whereIn('id', $ids)->delete();
+                \App\Models\Trip::whereIn('id', $ids)->forceDelete();
                 return response()->json(['message' => count($ids) . ' trip logs deleted successfully.']);
             }
 
             // Standard Single Deletion
-            \App\Models\Trip::where('id', $id)->delete();
+            \App\Models\Trip::where('id', $id)->forceDelete();
 
             return response()->json(['message' => 'Trip log deleted successfully.']);
 

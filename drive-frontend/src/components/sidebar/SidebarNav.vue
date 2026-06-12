@@ -6,13 +6,12 @@
     <ItemVehicles v-if="hasPermission('vehicle.view')" />
     <ItemChecklists v-if="hasPermission('checklist.view')" />   
     <ItemMaintenance v-if="hasPermission('maintenance.full')" />
-    
-    <!-- NEW: Trip Logs -->
     <ItemTripLogs v-if="hasPermission('trip.view')" />
-    
     <ItemIncidents v-if="hasPermission('incident.view')" />
+    <!--DEV TOOLS -->
     <ItemActivityLogs v-if="hasRole('Developer')" />
     <ItemSystemHealth v-if="hasRole('Developer')" />
+    <ItemArchived v-if="hasRole('Developer')" />
   </nav>
 </template>
 
@@ -30,4 +29,5 @@ import ItemTripLogs from './items/ItemTripLogs.vue';
 import ItemIncidents from './items/ItemIncidents.vue';
 import ItemActivityLogs from './items/ItemActivityLogs.vue';
 import ItemSystemHealth from './items/ItemSystemHealth.vue';
+import ItemArchived from './items/ItemArchived.vue';
 </script>

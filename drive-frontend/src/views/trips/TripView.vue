@@ -187,7 +187,7 @@ const tripDuration = computed(() => {
 
 const formatTimeOnly = (dateString) => {
     if (!dateString) return '';
-    const utcDate = dateString.endsWith('Z') ? dateString : dateString.replace(' ', 'T') + 'Z';
+    const utcDate = dateString.endsWith('Z') ? dateString : dateString.replace(' ', 'T') + '+08:00';
     return new Date(utcDate).toLocaleString('en-US', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
 };
 

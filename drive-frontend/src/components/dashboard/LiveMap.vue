@@ -168,7 +168,7 @@ const fetchLiveTelemetry = async () => {
                                 icon: L.divIcon({ html: html, className: '', iconSize: [20, 28], iconAnchor: [10, 28] })
                             });
 
-                            const time = new Date(log.created_at).toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit', hour12: true });
+                            const time = new Date(log.created_at.endsWith('Z') ? log.created_at : log.created_at.replace(' ', 'T') + '+08:00').toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit', hour12: true });
                             marker.bindPopup(`<div class="text-center p-1"><b class="text-indigo-700 uppercase tracking-wider text-[10px]">${getPhaseTitle(log.phase)}</b><br/><span class="text-xs font-medium text-slate-500">Recorded: ${time}</span></div>`);
                             marker.addTo(map.value);
                             phaseMarkers.value[vehicle.id][log.phase] = marker;
@@ -191,7 +191,7 @@ const fetchLiveTelemetry = async () => {
                                 icon: L.divIcon({ html: html, className: '', iconSize: [24, 24], iconAnchor: [12, 12] })
                             });
 
-                            const time = new Date(inc.created_at).toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit', hour12: true });
+                            const time = new Date(inc.created_at.endsWith('Z') ? inc.created_at : inc.created_at.replace(' ', 'T') + '+08:00').toLocaleTimeString('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit', hour12: true });
                             marker.bindPopup(`<div class="text-center p-1"><b class="text-red-600 uppercase text-[10px] font-black tracking-widest">🚨 ${inc.issue_type}</b><br/><span class="text-[10px] text-slate-700 font-bold uppercase">Target: ${inc.incident_target}</span><br/><span class="text-xs font-medium text-slate-500 block mt-1">Reported: ${time}</span></div>`);
                             marker.addTo(map.value);
                             incidentMarkers.value[vehicle.id][inc.id] = marker;

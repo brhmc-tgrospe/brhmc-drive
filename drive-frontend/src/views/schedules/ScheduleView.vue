@@ -24,9 +24,9 @@ defineEmits(['close']);
 
 const formatDateTime = (dateString) => {
     if (!dateString) return '';
-    const cleanDate = dateString.endsWith('Z') ? dateString.slice(0, -1) : dateString;
-    return new Date(cleanDate).toLocaleString('en-US', { 
-        month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true 
+    const utcDate = dateString.endsWith('Z') ? dateString : dateString.replace(' ', 'T') + '+08:00';
+    return new Date(utcDate).toLocaleString('en-US', { 
+        timeZone: 'Asia/Manila', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true 
     });
 };
 </script>

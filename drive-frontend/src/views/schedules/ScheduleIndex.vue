@@ -422,16 +422,9 @@ const handleScheduleChange = async () => {
 // ==========================================
 const formatDateTime = (dateString) => {
     if (!dateString) return '';
-    
-    // Convert safe spaces to 'T' for iOS/Safari parsing
-    const safeString = dateString.replace(' ', 'T');
-    
-    // Strip the trailing 'Z' if it exists. 
-    // This tells JS to treat the string as the EXACT LOCAL TIME it was originally saved as,
-    // bypassing the automatic +8 hour timezone conversion.
-    const cleanDate = safeString.endsWith('Z') ? safeString.slice(0, -1) : safeString;
-    
-    return new Date(cleanDate).toLocaleString('en-US', { 
+    const utcDate = dateString.endsWith('Z') ? dateString : dateString.replace(' ', 'T') + '+08:00';
+    return new Date(utcDate).toLocaleString('en-US', { 
+        timeZone: 'Asia/Manila',
         month: 'short', 
         day: 'numeric', 
         hour: 'numeric', 

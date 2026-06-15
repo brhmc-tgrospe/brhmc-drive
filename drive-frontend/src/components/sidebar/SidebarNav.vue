@@ -1,5 +1,5 @@
 <template>
-  <nav class="flex flex-col w-full space-y-2 pt-4">
+  <nav class="flex flex-col w-full md:items-center space-y-2 pt-4">
     <ItemDashboard v-if="hasAnyPermission(['dashboard.status_grids', 'dashboard.live_map_tracker', 'dashboard.live_trip_tracking', 'execute_shifts'])" />
     <ItemUsers v-if="hasPermission('user.view')" />
     <ItemSchedule v-if="hasPermission('schedule.view')" />

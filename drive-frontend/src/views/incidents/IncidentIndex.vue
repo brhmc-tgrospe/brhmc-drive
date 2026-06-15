@@ -126,7 +126,8 @@
               <th class="py-2 px-3 sm:py-3 sm:px-4 font-bold text-right whitespace-nowrap">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <TableSkeleton v-if="isLoading" :columns="8" :rows="5" />
+          <tbody v-else class="divide-y divide-slate-100">
             <tr v-if="!incidentStore.incidents?.length && !incidentStore.loading">
               <td colspan="7" class="py-8 text-center text-slate-500 font-medium">No incidents found.</td>
             </tr>
@@ -288,6 +289,7 @@ import { useIncidentStore } from '../../stores/incident';
 import { useToastStore } from '../../stores/toast';
 import { useAuthStore } from '../../stores/auth';
 
+import TableSkeleton from '../../components/ui/TableSkeleton.vue';
 import IncidentView from './IncidentView.vue';
 import IncidentEdit from './IncidentEdit.vue';
 import IncidentAcknowledge from './IncidentAcknowledge.vue';
@@ -300,6 +302,7 @@ const incidentStore = useIncidentStore();
 const toastStore = useToastStore();
 
 // SORTING STATE
+const isLoading = ref(false);
 const sortBy = ref('incidents.id');
 const sortDir = ref('desc');
 
@@ -340,17 +343,22 @@ const perPage = ref(10);
 const currentPage = ref(1);
 
 const loadIncidents = async () => {
-    await incidentStore.fetchIncidents({
-        search: searchQuery.value, 
-        start_date: dateFrom.value,
-        end_date: dateTo.value,
-        status: filterStatus.value,
-        per_page: perPage.value, 
-        page: currentPage.value,
-        sort_by: sortBy.value,
-        sort_dir: sortDir.value
-    });
-    selectedItems.value = [];
+    isLoading.value = true;
+    try {
+        await incidentStore.fetchIncidents({
+            search: searchQuery.value, 
+            start_date: dateFrom.value,
+            end_date: dateTo.value,
+            status: filterStatus.value,
+            per_page: perPage.value, 
+            page: currentPage.value,
+            sort_by: sortBy.value,
+            sort_dir: sortDir.value
+        });
+        selectedItems.value = [];
+    } finally {
+        isLoading.value = false;
+    }
 };
 
 onMounted(() => loadIncidents());

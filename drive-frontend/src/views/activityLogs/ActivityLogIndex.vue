@@ -73,7 +73,8 @@
               <th class="py-4 px-4 sm:px-6 w-auto">Activity Details</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <TableSkeleton v-if="isLoading" :columns="3" :rows="5" />
+          <tbody v-else class="divide-y divide-slate-100">
             <tr v-if="loading" class="bg-white">
               <td colspan="5" class="py-12 text-center text-slate-400 font-medium">
                 <div class="flex items-center justify-center gap-3">
@@ -166,11 +167,13 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import api from '../../axios';
 import { useToastStore } from '../../stores/toast';
+import TableSkeleton from '../../components/ui/TableSkeleton.vue';
 
 const toastStore = useToastStore();
 
 const logs = ref([]);
 const loading = ref(false);
+const isLoading = ref(false);
 
 const filters = reactive({
     search: '',
@@ -193,6 +196,7 @@ const hasActiveFilters = computed(() => {
 });
 
 const loadLogs = async () => {
+    isLoading.value = true;
     loading.value = true;
     try {
         const response = await api.get('/api/activity-logs', {
@@ -220,6 +224,7 @@ const loadLogs = async () => {
         console.error(error);
     } finally {
         loading.value = false;
+        isLoading.value = false;
     }
 };
 

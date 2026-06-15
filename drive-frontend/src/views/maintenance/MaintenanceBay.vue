@@ -22,11 +22,14 @@
       <!-- DASHBOARD AREA -->
       <div class="overflow-y-auto flex-1 relative p-4 sm:p-6 bg-slate-50/50">
         <!-- Loading Overlay -->
-        <div v-if="isRefreshing || isSaving" class="absolute inset-0 bg-white/60 backdrop-blur-sm z-20 flex items-center justify-center">
+        <div v-if="isSaving" class="absolute inset-0 bg-white/60 backdrop-blur-sm z-20 flex items-center justify-center">
             <svg class="animate-spin h-8 w-8 text-teal-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
         </div>
 
-        <div v-if="!breakdownVehicles?.length" class="flex flex-col items-center justify-center h-full text-slate-500 py-12">
+        <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <CardSkeleton v-for="i in 8" :key="i" />
+        </div>
+        <div v-else-if="!breakdownVehicles?.length" class="flex flex-col items-center justify-center h-full text-slate-500 py-12">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center">
                 <svg class="w-16 h-16 text-teal-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 <p class="text-lg font-bold text-slate-700">All Clear</p>
@@ -102,24 +105,36 @@ import { useFleetStore } from '../../stores/fleet';
 import { useToastStore } from '../../stores/toast';
 import api from '../../axios';
 import ConfirmModal from '../../components/modals/ConfirmModal.vue';
+import CardSkeleton from '../../components/ui/CardSkeleton.vue';
 
 const fleetStore = useFleetStore();
 const toastStore = useToastStore();
 
+const isLoading = ref(false);
 const isRefreshing = ref(false);
 const isSaving = ref(false);
 
 onMounted(async () => {
     isRefreshing.value = true;
-    await fleetStore.fetchFleet();
-    isRefreshing.value = false;
+    isLoading.value = true;
+    try {
+        await fleetStore.fetchFleet();
+    } finally {
+        isRefreshing.value = false;
+        isLoading.value = false;
+    }
 });
 
 const refreshFleet = async () => {
     isRefreshing.value = true;
-    await fleetStore.fetchFleet();
-    if(toastStore.show) toastStore.show('Maintenance bay data synchronized!', 'success');
-    isRefreshing.value = false;
+    isLoading.value = true;
+    try {
+        await fleetStore.fetchFleet();
+        if(toastStore.show) toastStore.show('Maintenance bay data synchronized!', 'success');
+    } finally {
+        isRefreshing.value = false;
+        isLoading.value = false;
+    }
 };
 
 const searchQuery = ref('');

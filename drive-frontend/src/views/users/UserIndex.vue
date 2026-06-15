@@ -103,7 +103,8 @@
               </th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <TableSkeleton v-if="isLoading" :columns="7" :rows="5" />
+          <tbody v-else class="divide-y divide-slate-100">
             <tr v-if="!users?.length">
               <td colspan="7" class="py-8 text-center text-slate-500 font-medium text-sm">No users found.</td>
             </tr>
@@ -211,6 +212,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import TableSkeleton from '../../components/ui/TableSkeleton.vue';
 import api from '../../axios';
 import { useAuthStore } from '../../stores/auth';
 import { useToastStore } from '../../stores/toast';
@@ -228,6 +230,7 @@ const router = useRouter();
 const { hasPermission } = useACL();
 
 const users = ref([]);
+const isLoading = ref(false);
 const searchQuery = ref('');
 const perPage = ref(10);
 const currentPage = ref(1);
@@ -261,6 +264,7 @@ const isConfirmModalOpen = ref(false);
 const targetUser = ref(null);
 
 const loadUsers = async () => {
+    isLoading.value = true;
     try {
         const response = await api.get('/api/users', {
             params: {
@@ -276,6 +280,8 @@ const loadUsers = async () => {
         currentPage.value = response.data.current_page;
     } catch (error) {
         toastStore.show("Failed to load users", "error");
+    } finally {
+        isLoading.value = false;
     }
 };
 

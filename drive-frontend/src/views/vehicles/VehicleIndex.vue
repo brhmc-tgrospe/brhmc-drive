@@ -54,10 +54,7 @@
 
       <!-- TABLE -->
       <div class="overflow-x-auto flex-1 relative">
-        <!-- Loading Overlay -->
-        <div v-if="isRefreshing" class="absolute inset-0 bg-white/60 backdrop-blur-sm z-20 flex items-center justify-center">
-            <svg class="animate-spin h-8 w-8 text-teal-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-        </div>
+
 
         <table class="w-full text-left text-xs sm:text-sm text-slate-600 border-collapse">
           <thead class="bg-white border-b border-slate-200 sticky top-0 z-10 text-[9px] sm:text-xs text-slate-500 uppercase">
@@ -107,7 +104,8 @@
               <th class="py-2 px-3 sm:py-3 sm:px-4 font-bold text-right whitespace-nowrap">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <TableSkeleton v-if="isLoading" :columns="7" :rows="5" />
+          <tbody v-else class="divide-y divide-slate-100">
             <tr v-if="!paginatedVehicles?.length">
               <td colspan="7" class="py-8 text-center text-slate-500 font-medium whitespace-nowrap text-xs sm:text-sm">No vehicles found.</td>
             </tr>
@@ -205,6 +203,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
+import TableSkeleton from '../../components/ui/TableSkeleton.vue';
 import { useFleetStore } from '../../stores/fleet';
 import { useToastStore } from '../../stores/toast';
 
@@ -226,6 +225,7 @@ const currentPage = ref(1);
 const sortBy = ref('id');
 const sortDir = ref('desc');
 const isRefreshing = ref(false); // UI Loader State
+const isLoading = ref(false);
 
 const selectedItems = ref([]);
 
@@ -249,15 +249,25 @@ onMounted(async () => {
     // CRITICAL FIX: Always fetch fresh data when the masterlist is mounted!
     // This ensures that status changes made in the Action Center are immediately visible.
     isRefreshing.value = true;
-    await fleetStore.fetchFleet();
-    isRefreshing.value = false;
+    isLoading.value = true;
+    try {
+        await fleetStore.fetchFleet();
+    } finally {
+        isRefreshing.value = false;
+        isLoading.value = false;
+    }
 });
 
 const refreshFleet = async () => {
     isRefreshing.value = true;
-    await fleetStore.fetchFleet();
-    if(toastStore.show) toastStore.show('Fleet data synchronized!', 'success');
-    isRefreshing.value = false;
+    isLoading.value = true;
+    try {
+        await fleetStore.fetchFleet();
+        if(toastStore.show) toastStore.show('Fleet data synchronized!', 'success');
+    } finally {
+        isRefreshing.value = false;
+        isLoading.value = false;
+    }
 };
 
 const toggleSort = (column) => {

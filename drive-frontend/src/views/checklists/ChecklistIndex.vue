@@ -106,7 +106,8 @@
               <th class="py-2 px-3 sm:py-3 sm:px-4 font-bold text-right whitespace-nowrap">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <TableSkeleton v-if="isLoading" :columns="8" :rows="5" />
+          <tbody v-else class="divide-y divide-slate-100">
             <tr v-if="!checklistStore.checklists?.length && !checklistStore.loading">
               <td colspan="8" class="py-8 text-center text-slate-500 font-medium whitespace-nowrap text-xs sm:text-sm">No checklists found.</td>
             </tr>
@@ -231,6 +232,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
+import TableSkeleton from '../../components/ui/TableSkeleton.vue';
 import { useChecklistStore } from '../../stores/checklist';
 import { useToastStore } from '../../stores/toast';
 import { useAuthStore } from '../../stores/auth';
@@ -244,6 +246,7 @@ import ChecklistViewReport from './ChecklistViewReport.vue';
 import ChecklistDelete from './ChecklistDelete.vue'; // IMPORTED HERE
 
 const checklistStore = useChecklistStore();
+const isLoading = ref(false);
 const toastStore = useToastStore();
 const authStore = useAuthStore();
 
@@ -275,6 +278,7 @@ const toggleSelectAll = (event) => {
 };
 
 const loadChecklists = async () => {
+    isLoading.value = true;
     try {
         await checklistStore.fetchChecklists({
             search: searchQuery.value,
@@ -288,6 +292,8 @@ const loadChecklists = async () => {
         selectedItems.value = []; 
     } catch (e) {
         toastStore.show('Failed to fetch masterlist data.', 'error');
+    } finally {
+        isLoading.value = false;
     }
 };
 

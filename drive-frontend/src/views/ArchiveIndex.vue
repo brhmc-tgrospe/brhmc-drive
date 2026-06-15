@@ -57,7 +57,8 @@
               <th class="px-6 py-3 font-bold text-right">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <TableSkeleton v-if="isLoading" :columns="5" :rows="5" />
+          <tbody v-else class="divide-y divide-slate-100">
             <tr v-for="record in archiveStore.archivedRecords" :key="record.id" class="hover:bg-slate-50/50 transition-colors group">
               <td class="px-6 py-3 text-center">
                 <input type="checkbox" v-model="selectedRecords" :value="record.id" class="rounded border-slate-300 text-red-600 focus:ring-red-500">
@@ -193,6 +194,7 @@ import { ref, onMounted, watch, computed } from 'vue';
 import { useArchiveStore } from '../stores/archiveStore';
 import { useToastStore } from '../stores/toast';
 import ConfirmModal from '../components/modals/ConfirmModal.vue';
+import TableSkeleton from '../components/ui/TableSkeleton.vue';
 
 const archiveStore = useArchiveStore();
 const toast = useToastStore();
@@ -240,13 +242,19 @@ const recordToRestore = ref(null);
 
 const showViewModal = ref(false);
 const recordToView = ref(null);
+const isLoading = ref(false);
 
-const fetchRecords = () => {
-  archiveStore.fetchArchivedRecords(activeTab.value, {
-    page: archiveStore.pagination.currentPage,
-    search: searchQuery.value,
-    per_page: perPage.value
-  });
+const fetchRecords = async () => {
+  isLoading.value = true;
+  try {
+    await archiveStore.fetchArchivedRecords(activeTab.value, {
+      page: archiveStore.pagination.currentPage,
+      search: searchQuery.value,
+      per_page: perPage.value
+    });
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 onMounted(() => {

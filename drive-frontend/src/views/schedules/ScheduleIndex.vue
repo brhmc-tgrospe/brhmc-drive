@@ -128,7 +128,8 @@
               <th class="py-2 px-3 sm:py-3 sm:px-4 font-bold text-right whitespace-nowrap">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <TableSkeleton v-if="isLoading" :columns="7" :rows="5" />
+          <tbody v-else class="divide-y divide-slate-100">
             <tr v-if="shiftStore.loading">
               <td colspan="6" class="py-12 text-center text-slate-400 font-bold text-xs sm:text-sm animate-pulse">Loading schedules...</td>
             </tr>
@@ -265,6 +266,7 @@ import { useToastStore } from '../../stores/toast';
 import { useFleetStore } from '../../stores/fleet';
 import { useAuthStore } from '../../stores/auth';
 import { useACL } from '../../composables/useACL';
+import TableSkeleton from '../../components/ui/TableSkeleton.vue';
 
 import ScheduleAdd from './ScheduleAdd.vue';
 import ScheduleEdit from './ScheduleEdit.vue';
@@ -315,8 +317,10 @@ const isForceStarting = ref(false);
 const targetShift = ref(null);
 
 const currentPage = ref(1);
+const isLoading = ref(false);
 
 const loadSchedules = async () => {
+    isLoading.value = true;
     try {
         await shiftStore.fetchShifts({
             search: searchQuery.value, 
@@ -330,6 +334,8 @@ const loadSchedules = async () => {
         currentPage.value = shiftStore.currentPage;
     } catch (error) {
         toastStore.show('Failed to load scheduling data.', 'error');
+    } finally {
+        isLoading.value = false;
     }
 };
 

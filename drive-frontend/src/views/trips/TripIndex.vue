@@ -107,7 +107,8 @@
               <th class="py-2 px-3 sm:py-3 sm:px-4 font-bold text-right whitespace-nowrap">Actions</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-100">
+          <TableSkeleton v-if="isLoading" :columns="7" :rows="5" />
+          <tbody v-else class="divide-y divide-slate-100">
             <tr v-if="!tripLogStore.trips?.length && !tripLogStore.loading">
               <td colspan="7" class="py-8 text-center text-slate-500 font-medium">No trip logs found.</td>
             </tr>
@@ -203,6 +204,7 @@ import { useTripLogStore } from '../../stores/tripLog';
 import { useToastStore } from '../../stores/toast';
 import { useAuthStore } from '../../stores/auth';
 
+import TableSkeleton from '../../components/ui/TableSkeleton.vue';
 import TripView from './TripView.vue';
 import { useACL } from '../../composables/useACL';
 
@@ -211,6 +213,7 @@ const tripLogStore = useTripLogStore();
 const toastStore = useToastStore();
 const authStore = useAuthStore();
 
+const isLoading = ref(false);
 const searchQuery = ref('');
 const dateFrom = ref('');
 const dateTo = ref('');
@@ -239,6 +242,7 @@ const toggleSelectAll = (event) => {
 };
 
 const loadTrips = async () => {
+    isLoading.value = true;
     try {
         await tripLogStore.fetchTrips({
             search: searchQuery.value, 
@@ -252,6 +256,8 @@ const loadTrips = async () => {
         selectedItems.value = []; // Reset checkboxes when data changes
     } catch (e) {
         toastStore.show('Failed to fetch trip logs.', 'error');
+    } finally {
+        isLoading.value = false;
     }
 };
 

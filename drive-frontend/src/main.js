@@ -24,6 +24,7 @@ const MaintenanceBay = () => import('./views/maintenance/MaintenanceBay.vue');
 const Trips = () => import('./views/trips/TripIndex.vue');
 const ActivityLogs = () => import('./views/activityLogs/ActivityLogIndex.vue');
 const SystemHealth = () => import('./views/system/SystemHealth.vue');
+const ArchiveIndex = () => import('./views/ArchiveIndex.vue');
 
 const routes = [
     { path: '/', component: Login, name: 'RootLogin', meta: { guest: true } },
@@ -41,6 +42,7 @@ const routes = [
             { path: 'incidents', component: Incidents, name: 'Incidents', meta: { requiresAuth: true, requiresPermission: 'incident.view' } },
             { path: 'maintenance', component: MaintenanceBay, name: 'Maintenance Bay', meta: { requiresAuth: true, requiresPermission: 'maintenance.full' } },
             { path: 'activity-logs', component: ActivityLogs, name: 'Activity Logs', meta: { requiresAuth: true, requiresRole: 'developer' } },
+            { path: 'archived', component: ArchiveIndex, name: 'Archived Records', meta: { requiresAuth: true, requiresRole: 'developer' } },
             { path: 'system-health', component: SystemHealth, name: 'System Health', meta: { requiresAuth: true, requiresRole: 'developer' } },
             { path: 'settings', component: Settings, name: 'Settings', meta: { requiresAuth: true } },
             { path: 'profile', component: Profile, name: 'Profile', meta: { requiresAuth: true } },

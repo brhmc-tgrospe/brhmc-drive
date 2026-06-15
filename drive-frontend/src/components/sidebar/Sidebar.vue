@@ -4,7 +4,7 @@
     'absolute inset-y-0 left-0 md:relative md:translate-x-0',
     isMobileOpen ? 'translate-x-0 w-64 px-4' : '-translate-x-full md:w-16 md:items-center'
   ]">
-    <div @click="$emit('close-mobile')">
+    <div @click="$emit('close-mobile')" class="flex-1 overflow-y-auto overflow-x-hidden w-full pb-4">
         <SidebarNav />
     </div>
     

@@ -10,8 +10,9 @@
     <ItemIncidents v-if="hasPermission('incident.view')" />
     <!--DEV TOOLS -->
     <ItemActivityLogs v-if="hasRole('Developer')" />
-    <ItemSystemHealth v-if="hasRole('Developer')" />
     <ItemArchived v-if="hasRole('Developer')" />
+    <ItemSystemHealth v-if="hasRole('Developer')" />
+
   </nav>
 </template>
 

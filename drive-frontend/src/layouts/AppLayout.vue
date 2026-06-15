@@ -33,11 +33,16 @@
     </div>
     
     <Toast />
+
+    <!-- GLOBAL SIDEBAR TOOLTIP -->
+    <div v-if="tooltip.show" :style="{ top: tooltip.y + 'px', left: tooltip.x + 'px' }" class="fixed z-[9999] px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded shadow-sm pointer-events-none whitespace-nowrap transform -translate-y-1/2 transition-opacity">
+      {{ tooltip.text }}
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import Toast from '../components/Toast.vue'; 
@@ -49,6 +54,42 @@ import Sidebar from '../components/sidebar/Sidebar.vue';
 const router = useRouter();
 const authStore = useAuthStore();
 const isMobileMenuOpen = ref(false); 
+
+const tooltip = ref({ show: false, text: '', x: 0, y: 0 });
+
+const handleMouseOver = (e) => {
+  if (window.innerWidth < 768) return; 
+  const el = e.target.closest('a.group'); 
+  if (el && el.closest('aside')) { 
+    const textEl = el.querySelector('.md\\:hidden');
+    if (textEl) {
+      const rect = el.getBoundingClientRect();
+      tooltip.value = {
+        show: true,
+        text: textEl.textContent.trim(),
+        x: rect.right + 12,
+        y: rect.top + rect.height / 2
+      };
+    }
+  }
+};
+
+const handleMouseOut = (e) => {
+  const el = e.target.closest('a.group');
+  if (el && el.closest('aside')) {
+    tooltip.value.show = false;
+  }
+};
+
+onMounted(() => {
+  document.body.addEventListener('mouseover', handleMouseOver);
+  document.body.addEventListener('mouseout', handleMouseOut);
+});
+
+onUnmounted(() => {
+  document.body.removeEventListener('mouseover', handleMouseOver);
+  document.body.removeEventListener('mouseout', handleMouseOut);
+});
 
 const handleReturnToDeveloper = () => {
     authStore.stopImpersonating();

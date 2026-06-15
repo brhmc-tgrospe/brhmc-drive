@@ -148,7 +148,6 @@ public function destroy(Request $request, $id)
                 return response()->json(['message' => count($ids) . ' trip logs deleted successfully.']);
             }
 
-            // Standard Single Deletion
             \App\Models\Trip::where('id', $id)->forceDelete();
 
             return response()->json(['message' => 'Trip log deleted successfully.']);

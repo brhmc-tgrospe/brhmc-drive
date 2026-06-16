@@ -65,6 +65,7 @@ class VehicleController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        \Log::info('VehicleController@index called', ['user' => $user ? $user->toArray() : 'NULL']);
         if ($user && strtolower($user->role) !== 'developer' && !$user->hasPermission('vehicle.view') && !$user->hasPermission('schedule.add') && !$user->hasPermission('schedule.edit') && !$user->hasPermission('schedule.view') && !$user->hasPermission('maintenance.full')) {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }

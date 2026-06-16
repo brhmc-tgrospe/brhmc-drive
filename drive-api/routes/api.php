@@ -32,32 +32,30 @@ Route::middleware('auth:sanctum')->group(function () {
     // ==========================================
     // USER MANAGEMENT ROUTES
     // ==========================================
-    Route::middleware('can:view-users')->group(function() {
-        Route::get('/users', [UserController::class, 'index']);
-        Route::get('/users/{id}', [UserController::class, 'show']);
-    });
+    // ==========================================
+    // USER MANAGEMENT ROUTES
+    // ==========================================
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{id}', [UserController::class, 'show']);
     
-    Route::middleware('can:manage-users')->group(function() {
-        Route::post('/users', [UserController::class, 'store']);
-        Route::put('/users/{id}', [UserController::class, 'update']);
-        Route::delete('/users/{id}', [UserController::class, 'destroy']);
-        Route::post('/users/{id}/impersonate', [UserController::class, 'impersonate']);
-    });
+    Route::post('/users', [UserController::class, 'store']);
+    Route::put('/users/{id}', [UserController::class, 'update']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    Route::post('/users/{id}/impersonate', [UserController::class, 'impersonate']);
     
     // ==========================================
     // FLEET & VEHICLE ROUTES
     // ==========================================
-    Route::middleware('can:view-fleet')->group(function() {
-        Route::get('/vehicles', [VehicleController::class, 'index']);
-        Route::get('/vehicles/{id}', [VehicleController::class, 'show']);
-    });
+    // ==========================================
+    // FLEET & VEHICLE ROUTES
+    // ==========================================
+    Route::get('/vehicles', [VehicleController::class, 'index']);
+    Route::get('/vehicles/{id}', [VehicleController::class, 'show']);
     
-    Route::middleware('can:manage-fleet')->group(function() {
-        Route::post('/vehicles', [VehicleController::class, 'store']);
-        Route::put('/vehicles/{id}', [VehicleController::class, 'update']);
-        Route::delete('/vehicles/{id}', [VehicleController::class, 'destroy']);
-        Route::post('/vehicles/{id}/image', [VehicleController::class, 'uploadImage']);
-    });
+    Route::post('/vehicles', [VehicleController::class, 'store']);
+    Route::put('/vehicles/{id}', [VehicleController::class, 'update']);
+    Route::delete('/vehicles/{id}', [VehicleController::class, 'destroy']);
+    Route::post('/vehicles/{id}/image', [VehicleController::class, 'uploadImage']);
     
     // ==========================================
     // SHIFT & SCHEDULING ROUTES
@@ -65,16 +63,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/shifts/my-shifts', [VehicleShiftController::class, 'myShifts']);
     Route::post('/shifts/{id}/start', [VehicleShiftController::class, 'startShift']);
 
-    Route::middleware('can:view-schedules')->group(function() {
-        Route::get('/shifts', [VehicleShiftController::class, 'index']);
-        Route::get('/shifts/{id}', [VehicleShiftController::class, 'show']);
-    });
+    Route::get('/shifts', [VehicleShiftController::class, 'index']);
+    Route::get('/shifts/{id}', [VehicleShiftController::class, 'show']);
 
-    Route::middleware('can:manage-schedules')->group(function() {
-        Route::post('/shifts', [VehicleShiftController::class, 'store']);
-        Route::put('/shifts/{shift}', [VehicleShiftController::class, 'update']);
-        Route::delete('/shifts/{shift}', [VehicleShiftController::class, 'destroy']);
-    });
+    Route::post('/shifts', [VehicleShiftController::class, 'store']);
+    Route::put('/shifts/{shift}', [VehicleShiftController::class, 'update']);
+    Route::delete('/shifts/{shift}', [VehicleShiftController::class, 'destroy']);
 
     // ==========================================
     // CHECKLIST & BLOWBAGETS ROUTES

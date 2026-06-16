@@ -22,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Implicitly grant "Developer" role all permissions, and also check custom legacy permissions
         Gate::before(function ($user, $ability) {
+            \Log::info('Gate::before called', ['id' => $user->id ?? null, 'role' => $user->role ?? 'NULL', 'ability' => $ability]);
             if (strtolower($user->role) === 'developer' || strtolower($user->role) === 'administrator' || strtolower($user->role) === 'admin') {
                 return true;
             }

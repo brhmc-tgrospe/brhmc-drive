@@ -391,6 +391,10 @@ const formatDetailedDescription = (log) => {
          details = `${subjectType} (ID: ${log.subject_id}) was ${event}`;
     }
 
+    if (log.event === 'force_deleted') {
+        details += ' - Data is permanently wiped and is not recoverable.';
+    }
+
     // Append properties changes if it's an update
     if (event === 'updated' && log.properties && log.properties.attributes && log.properties.old) {
         const changedKeys = Object.keys(log.properties.attributes).filter(k => k !== 'updated_at');

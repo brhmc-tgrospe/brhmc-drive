@@ -86,9 +86,10 @@ class ArchiveController extends Controller
         activity()
             ->causedBy(auth()->user())
             ->performedOn($record)
-            ->log('force_deleted');
+            ->event('force_deleted')
+            ->log('permanently wiped and is not recoverable');
 
-        $record->forceDelete();
+        \Illuminate\Support\Facades\DB::table($record->getTable())->where('id', $record->id)->delete();
 
         return response()->json(['message' => 'Record permanently deleted.']);
     }

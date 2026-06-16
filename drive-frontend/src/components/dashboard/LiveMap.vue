@@ -34,6 +34,7 @@ import { ref, watch, onMounted, onUnmounted, shallowRef } from 'vue';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import api from '../../axios';
+import echo from '../../echo';
 
 const props = defineProps({
   selectedVehicles: { type: Array, default: () => [] }
@@ -45,7 +46,6 @@ const vehicleMarkers = shallowRef({});
 const vehicleTrails = shallowRef({}); 
 const phaseMarkers = shallowRef({}); 
 const incidentMarkers = shallowRef({}); 
-let liveGpsInterval = null;
 
 const BASE_LAT = 13.1470067; 
 const BASE_LNG = 123.7221295;
@@ -65,11 +65,27 @@ onMounted(() => {
   addLandmarks();
 
   fetchLiveTelemetry();
-  liveGpsInterval = setInterval(fetchLiveTelemetry, 3000);
+  
+  echo.private('dispatch.fleet')
+    .listen('.vehicle.moved', fetchLiveTelemetry);
+
+  echo.channel('fleet-updates')
+    .listen('TripPhaseAdvanced', fetchLiveTelemetry)
+    .listen('IncidentReported', fetchLiveTelemetry)
+    .listen('.vehicle.status.changed', fetchLiveTelemetry);
+
+  echo.private('dispatch.alerts')
+    .listen('.emergency.triggered', fetchLiveTelemetry);
 });
 
 onUnmounted(() => {
-  if (liveGpsInterval) clearInterval(liveGpsInterval);
+  echo.private('dispatch.fleet').stopListening('.vehicle.moved', fetchLiveTelemetry);
+  echo.channel('fleet-updates')
+    .stopListening('TripPhaseAdvanced', fetchLiveTelemetry)
+    .stopListening('IncidentReported', fetchLiveTelemetry)
+    .stopListening('.vehicle.status.changed', fetchLiveTelemetry);
+  echo.private('dispatch.alerts').stopListening('.emergency.triggered', fetchLiveTelemetry);
+
   if (map.value) { map.value.remove(); map.value = null; }
 });
 

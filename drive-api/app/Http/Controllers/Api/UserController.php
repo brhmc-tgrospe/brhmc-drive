@@ -54,7 +54,17 @@ class UserController extends Controller
             $users = $query->get();
             
             foreach ($users as $user) {
-                if (strtolower($user->role) === 'driver') {
+                $isDriverRole = strtolower($user->role) === 'driver';
+                $hasExecuteShifts = false;
+                
+                if (!empty($user->legacy_permissions)) {
+                    $perms = is_string($user->legacy_permissions) ? json_decode($user->legacy_permissions, true) : $user->legacy_permissions;
+                    if (is_array($perms) && in_array('execute_shifts', $perms)) {
+                        $hasExecuteShifts = true;
+                    }
+                }
+
+                if ($isDriverRole || $hasExecuteShifts) {
 
                     // 1. Check if the driver is actively driving right now
                     $isActive = DB::table('shifts')

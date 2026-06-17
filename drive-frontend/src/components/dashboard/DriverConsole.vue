@@ -429,12 +429,7 @@ const advancePhase = async () => {
                 longitude: currentLng.value
             });
             
-            const response = await api.get(`/api/shifts/my-shifts?t=${new Date().getTime()}`);
-            const myShift = response.data.find(s => s.id === localShift.value.id);
-            if (myShift) {
-                localShift.value = myShift; 
-                syncPhaseState(myShift);
-            }
+            await fetchAndSyncCurrentShift();
         } catch (e) {
             toastStore.show('Network error while advancing phase.', 'error');
         } finally {
@@ -545,12 +540,7 @@ const submitChecklist = async (formPayload) => {
         }
 
         try {
-            const shiftRes = await api.get(`/api/shifts/my-shifts?t=${new Date().getTime()}`);
-            const updatedShift = shiftRes.data.find(s => s.id === localShift.value.id);
-            if (updatedShift) {
-                localShift.value = updatedShift;
-                syncPhaseState(updatedShift);
-            }
+            await fetchAndSyncCurrentShift();
         } catch (syncError) {
             console.error("Failed to resync state", syncError);
         }
@@ -572,6 +562,49 @@ const submitChecklist = async (formPayload) => {
 };
 
 let pollInterval = null;
+
+const fetchAndSyncCurrentShift = async () => {
+    if (!localShift.value?.id) return null;
+    try {
+        const response = await api.get(`/api/shifts/my-shifts?t=${new Date().getTime()}`);
+        const myShift = response.data.find(s => s.id === localShift.value.id);
+        if (myShift) {
+            localShift.value = myShift;
+            syncPhaseState(myShift);
+            return myShift;
+        }
+    } catch (e) {
+        console.error("Failed to fetch shift", e);
+    }
+    return null;
+};
+
+const finalizeShift = () => {
+    if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+    }
+
+    const wasPostTrip = isPostTripInspectionCompleted.value;
+    if (localShift.value && localShift.value.id) {
+        localStorage.removeItem(`post_trip_${localShift.value.id}`);
+    }
+
+    isTripActive.value = false;
+    isPostTripInspectionCompleted.value = false;
+    isShiftComplete.value = false;
+    currentPhaseIndex.value = 0;
+    phases.value.forEach(p => { p.status = 'pending'; p.timestamp = null; });
+    
+    localShift.value = null; 
+    
+    if (wasPostTrip && toastStore && toastStore.show) {
+        toastStore.show("Turnover approved by Dispatcher. Shift finalized.", "success");
+    }
+    
+    setTimeout(() => { emit('refresh'); }, 500);
+};
+
 onMounted(() => {
     pollInterval = setInterval(async () => {
         if (isTripActive.value && localShift.value && !isShiftComplete.value) {
@@ -584,26 +617,7 @@ onMounted(() => {
 
                     if (myShift.status === 'COMPLETED') {
                         isShiftComplete.value = true;
-                        clearInterval(pollInterval);
-                        pollInterval = null;
-
-                        const wasPostTrip = isPostTripInspectionCompleted.value;
-                        if (localShift.value && localShift.value.id) {
-                            localStorage.removeItem(`post_trip_${localShift.value.id}`);
-                        }
-
-                        isTripActive.value = false;
-                        isPostTripInspectionCompleted.value = false;
-                        currentPhaseIndex.value = 0;
-                        phases.value.forEach(p => { p.status = 'pending'; p.timestamp = null; });
-                        
-                        localShift.value = null; 
-                        
-                        if (wasPostTrip && toastStore && toastStore.show) {
-                            toastStore.show("Turnover approved by Dispatcher. Shift finalized.", "success");
-                        }
-                        
-                        setTimeout(() => { emit('refresh'); }, 500);
+                        finalizeShift();
                         return;
                     }
 
@@ -618,27 +632,7 @@ onMounted(() => {
                         }
                     }
                 } else {
-                    clearInterval(pollInterval);
-                    pollInterval = null;
-
-                    const wasPostTrip = isPostTripInspectionCompleted.value;
-                    if (localShift.value && localShift.value.id) {
-                        localStorage.removeItem(`post_trip_${localShift.value.id}`);
-                    }
-
-                    isTripActive.value = false;
-                    isPostTripInspectionCompleted.value = false;
-                    isShiftComplete.value = false;
-                    currentPhaseIndex.value = 0;
-                    phases.value.forEach(p => { p.status = 'pending'; p.timestamp = null; });
-                    
-                    localShift.value = null; 
-                    
-                    if (wasPostTrip && toastStore && toastStore.show) {
-                        toastStore.show("Turnover approved by Dispatcher. Shift finalized.", "success");
-                    }
-                    
-                    setTimeout(() => { emit('refresh'); }, 500);
+                    finalizeShift();
                 }
             } catch (e) {
                 console.error("Polling failed", e);
@@ -668,9 +662,7 @@ const handleIssueReported = async (issueData) => {
         toastStore.show('Emergency Alert sent to Dispatch.', 'error');
         
         // Force a rapid resync to get the official database object
-        const response = await api.get(`/api/shifts/my-shifts?t=${new Date().getTime()}`);
-        const myShift = response.data.find(s => s.id === localShift.value.id);
-        if (myShift) localShift.value = myShift;
+        await fetchAndSyncCurrentShift();
         
     } catch (e) {
         toastStore.show('Failed to send emergency alert.', 'error');

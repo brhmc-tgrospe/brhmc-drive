@@ -41,11 +41,9 @@
           <div class="relative border-2 rounded-xl bg-slate-50 h-40 flex flex-col items-center justify-center group transition-colors cursor-crosshair overflow-hidden"
                :class="signatureError ? 'border-red-400 border-solid' : 'border-slate-300 border-dashed hover:border-indigo-300'">
             <span v-if="!hasSignature" class="absolute text-slate-400 text-sm font-medium select-none pointer-events-none transition-opacity duration-200">Draw signature here</span>
-            <canvas ref="signatureCanvas" class="absolute inset-0 w-full h-full touch-none"
-              @mousedown="startDrawing" @mousemove="draw" @mouseup="stopDrawing" @mouseleave="stopDrawing"
-              @touchstart.prevent="startDrawing" @touchmove.prevent="draw" @touchend.prevent="stopDrawing"></canvas>
-            <div class="absolute bottom-6 left-8 right-8 border-b-2 border-slate-200 pointer-events-none"></div>
-            <button v-if="hasSignature" type="button" @click="clearSignature" class="absolute top-2 right-2 px-2 py-1 text-xs font-semibold text-slate-500 hover:text-red-600 bg-white border border-slate-200 rounded shadow-sm z-10 transition-colors">Clear</button>
+            <SignaturePad ref="sigPad" :show="show" class="absolute inset-0 z-10" @update:hasSignature="val => { hasSignature = val; if(val) signatureError = false; }" />
+            <div class="absolute bottom-6 left-8 right-8 border-b-2 border-slate-200 pointer-events-none z-0"></div>
+            <button v-if="hasSignature" type="button" @click="$refs.sigPad.clearSignature()" class="absolute top-2 right-2 px-2 py-1 text-xs font-semibold text-slate-500 hover:text-red-600 bg-white border border-slate-200 rounded shadow-sm z-20 transition-colors">Clear</button>
           </div>
           <p class="text-xs text-slate-500 text-right mt-1">Dispatcher: {{ authStore.user?.first_name || 'Current User' }}</p>
         </div>
@@ -104,8 +102,9 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch } from 'vue';
 import { useAuthStore } from '../../stores/auth';
+import SignaturePad from '../SignaturePad.vue';
 
 const props = defineProps({ show: Boolean, checklist: Object });
 const emit = defineEmits(['close', 'approve', 'reject', 'view-details']); // ADDED EMIT
@@ -115,62 +114,32 @@ const isRejecting = ref(false);
 const rejectionReason = ref('');
 const rejectionReasonError = ref(false);
 
-const signatureCanvas = ref(null);
-const isDrawing = ref(false);
+const sigPad = ref(null);
 const hasSignature = ref(false);
 const signatureError = ref(false);
-let ctx = null;
 
-watch(() => props.show, async (newVal) => {
+watch(() => props.show, (newVal) => {
   if (newVal) {
     isRejecting.value = false;
     rejectionReason.value = '';
     rejectionReasonError.value = false;
     hasSignature.value = false;
     signatureError.value = false;
-    
-    await nextTick();
-    setTimeout(initCanvas, 150); 
   }
 });
 
-const initCanvas = () => {
-  const canvas = signatureCanvas.value;
-  if (!canvas) return;
-  ctx = canvas.getContext('2d');
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
-  ctx.strokeStyle = '#1e293b'; 
-  ctx.lineWidth = 3;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-};
-
-const getPos = (e) => {
-  const canvas = signatureCanvas.value;
-  const rect = canvas.getBoundingClientRect();
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-  return { x: clientX - rect.left, y: clientY - rect.top };
-};
-
-const startDrawing = (e) => { if (!ctx) return; isDrawing.value = true; signatureError.value = false; const pos = getPos(e); ctx.beginPath(); ctx.moveTo(pos.x, pos.y); };
-const draw = (e) => { if (!isDrawing.value || !ctx) return; const pos = getPos(e); ctx.lineTo(pos.x, pos.y); ctx.stroke(); hasSignature.value = true; };
-const stopDrawing = () => { isDrawing.value = false; if (ctx) ctx.closePath(); };
-const clearSignature = () => { if (!ctx || !signatureCanvas.value) return; ctx.clearRect(0, 0, signatureCanvas.value.width, signatureCanvas.value.height); hasSignature.value = false; ctx.beginPath(); };
 const cancelRejection = () => { isRejecting.value = false; rejectionReasonError.value = false; };
 
 const handleApprove = () => {
   if (!hasSignature.value) { signatureError.value = true; return; }
-  const signatureData = signatureCanvas.value ? signatureCanvas.value.toDataURL('image/png') : 'SIGNED_VERIFIED';
+  const signatureData = sigPad.value && sigPad.value.getSignatureData() ? sigPad.value.getSignatureData() : 'SIGNED_VERIFIED';
   emit('approve', { id: props.checklist.id, signature: signatureData });
 };
 
 const handleReject = () => {
   if (!hasSignature.value && isRejecting.value === false) { signatureError.value = true; return; }
   if (!rejectionReason.value.trim()) { rejectionReasonError.value = true; return; }
-  const signatureData = (hasSignature.value && signatureCanvas.value) ? signatureCanvas.value.toDataURL('image/png') : 'No Signature (Rejected)';
+  const signatureData = (hasSignature.value && sigPad.value && sigPad.value.getSignatureData()) ? sigPad.value.getSignatureData() : 'No Signature (Rejected)';
   emit('reject', { id: props.checklist.id, reason: rejectionReason.value, signature: signatureData });
 };
 </script>

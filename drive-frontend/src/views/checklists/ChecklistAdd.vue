@@ -18,20 +18,15 @@
               <label class="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">Vehicle Unit</label>
               <select v-model="form.vehicle_unit" required class="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-slate-200 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 bg-white">
                 <option value="" disabled>Select Vehicle...</option>
-                <option value="BRHMC-A101">BRHMC-A101 (Ambulance)</option>
-                <option value="BRHMC-A102">BRHMC-A102 (Ambulance)</option>
-                <option value="BRHMC-A103">BRHMC-A103 (Ambulance)</option>
-                <option value="SJA-5555">SJA-5555 (Service Vehicle)</option>
+                <option v-for="v in vehicles" :key="v.id" :value="v.unit_id">{{ v.unit_id }} ({{ v.plate_number }})</option>
               </select>
             </div>
 
             <div>
               <label class="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">Inspection Type</label>
-              <select v-model="form.type" required class="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-slate-200 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 bg-white">
-                <option value="Pre-Trip">Pre-Trip Inspection</option>
-                <option value="Post-Trip">Post-Trip Turn Over</option>
-                <option value="Routine">Routine Maintenance Check</option>
-              </select>
+              <div class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-bold bg-slate-100 text-slate-500 cursor-not-allowed">
+                Routine Maintenance Check
+              </div>
             </div>
           </div>
           
@@ -61,6 +56,23 @@
                             <input type="checkbox" v-model="form.engineCabin[key]" class="w-4 h-4 text-teal-600 rounded border-slate-300 focus:ring-teal-500">
                             <span class="text-[11px] sm:text-xs font-bold text-slate-700">{{ item }}</span>
                         </label>
+                        
+                        <!-- Engine Remarks & Legend -->
+                        <div class="col-span-1 sm:col-span-2 flex-1 flex flex-col pt-4 mt-2 border-t border-slate-100">
+                            <h4 class="text-[10px] font-bold text-slate-500 uppercase mb-2">Engine Remarks</h4>
+                            <div class="bg-blue-50 border border-blue-200 p-3 rounded-xl mb-3 shadow-inner">
+                                <p class="text-[9px] font-bold text-blue-800 uppercase mb-1 tracking-widest">Legend:</p>
+                                <div class="text-[9px] text-blue-900 font-medium grid grid-cols-1 sm:grid-cols-2 gap-1">
+                                    <span><strong class="font-black text-red-600">NR:</strong> Need Repair</span>
+                                    <span><strong class="font-black text-red-600">NRP:</strong> Need Replacement</span>
+                                    <span><strong class="font-black text-red-600">C:</strong> For Condem</span>
+                                    <span><strong class="font-black text-red-600">RF:</strong> For Refueling</span>
+                                    <span><strong class="font-black text-red-600">AA:</strong> Additional Air</span>
+                                    <span><strong class="font-black text-red-600">E:</strong> Empty &nbsp;&nbsp; <strong class="font-black text-red-600">F:</strong> Full</span>
+                                </div>
+                            </div>
+                            <textarea v-model="form.engine_remarks" rows="2" placeholder="Engine Remarks..." class="w-full flex-1 px-4 py-3 border border-slate-200 rounded-md text-sm font-bold bg-slate-50 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-slate-700"></textarea>
+                        </div>
                     </div>
                 </div>
 
@@ -103,6 +115,24 @@
                           <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Fuel Level ({{ form.fuel_level }}%)</label>
                           <input type="range" v-model="form.fuel_level" min="0" max="100" class="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-600">
                        </div>
+                       
+                       <div class="flex-1 flex flex-col mt-4">
+                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Fuel Gauge Photo Evidence <span class="text-red-500">*</span></label>
+                         
+                         <div v-if="!form.fuel_image" class="relative w-full flex-1 min-h-[160px] border-2 border-slate-300 border-dashed rounded-xl p-6 flex flex-col items-center justify-center hover:bg-slate-50 hover:border-teal-400 transition-colors cursor-pointer group">
+                           <input type="file" accept="image/*" capture="environment" @change="handleFuelImageUpload" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                           <svg class="w-8 h-8 text-slate-300 group-hover:text-teal-500 mb-2 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                           <span class="text-xs font-bold text-slate-500 group-hover:text-teal-600 transition-colors text-center">Tap to capture or upload fuel gauge image</span>
+                         </div>
+                         
+                         <div v-else class="relative w-full flex-1 min-h-[160px] rounded-xl overflow-hidden border-2 border-slate-200 shadow-sm bg-black">
+                           <img :src="form.fuel_image" class="w-full h-full object-contain" />
+                           <button @click="removeFuelImage" type="button" class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg shadow-md transition-colors" title="Remove image">
+                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                           </button>
+                         </div>
+                       </div>
+
                        <div class="grid grid-cols-2 gap-3 sm:gap-4 border-t border-slate-100 pt-4">
                           <div v-for="tire in ['front_left', 'front_right', 'rear_left', 'rear_right']" :key="tire">
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">{{ tire.replace('_', ' ') }} (PSI)</label>
@@ -252,7 +282,7 @@
           </div>
           
           <div class="pt-3 sm:pt-4 border-t border-slate-100 mt-4 sm:mt-6">
-            <button type="submit" class="w-full py-3 sm:py-3.5 bg-teal-600 text-white font-black uppercase tracking-wider text-sm rounded-lg hover:bg-teal-700 transition-colors shadow-md disabled:opacity-50">
+            <button type="submit" :disabled="!hasSignature || !form.fuel_image" class="w-full py-3 sm:py-3.5 bg-teal-600 text-white font-black uppercase tracking-wider text-sm rounded-lg hover:bg-teal-700 transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
               Submit Official Inspection
             </button>
           </div>
@@ -263,9 +293,10 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { useChecklist } from '../../composables/useChecklist';
 import SignaturePad from '../../components/SignaturePad.vue';
+import api from '../../axios';
 
 const props = defineProps({
   shift: { type: Object, default: null }
@@ -277,10 +308,10 @@ const { displayNames, pins, selectedPinToRemove, dropPin, removeSelectedPin, dev
 
 // Accordion State
 const openSections = ref({
-    engineCabin: true,
+    engineCabin: false,
     lights: false,
     equipment: false,
-    tiresFuel: false,
+    tiresFuel: true,
     damage: false
 });
 
@@ -291,9 +322,10 @@ const toggleSection = (section) => {
 // Form State with Checkboxes and Exact Inputs synced
 const form = ref({
     vehicle_unit: '',
-    type: 'Pre-Trip',
+    type: 'Routine Maintenance Check',
     odometer: null,
     fuel_level: 100,
+    fuel_image: '',
     tire_psi_front_left: 32, tire_psi_front_right: 32, tire_psi_rear_left: 32, tire_psi_rear_right: 32,
     condition: 'Good',
     engineCabin: Object.keys(displayNames.engineCabin).reduce((acc, key) => ({ ...acc, [key]: true }), {}),
@@ -304,44 +336,106 @@ const form = ref({
     damage_findings_front: '',
     damage_findings_rear: '',
     remarks: '',
+    engine_remarks: '',
     signature: ''
 });
 
+const vehicles = ref([]);
+
+onMounted(async () => {
+    try {
+        const res = await api.get('/api/vehicles?all=true');
+        vehicles.value = res.data.data || res.data || [];
+    } catch (e) {
+        console.error('Failed to load vehicles', e);
+    }
+});
+
+const handleFuelImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 800; // Resize to 800px width for fast mobile data transfer
+            let width = img.width;
+            let height = img.height;
+
+            if (width > MAX_WIDTH) {
+                height = Math.round((height * MAX_WIDTH) / width);
+                width = MAX_WIDTH;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Compress to JPEG at 70% quality (Massively reduces Base64 string size!)
+            form.value.fuel_image = canvas.toDataURL('image/jpeg', 0.7);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+};
+
+const removeFuelImage = () => {
+    form.value.fuel_image = '';
+};
+
 // INTERACTIVE PIN LOGIC
+
+const populateVehicleData = (vehicle) => {
+    if (!vehicle) return;
+    if (vehicle.unit_id) form.value.vehicle_unit = vehicle.unit_id;
+    if (vehicle.odometer !== undefined) form.value.odometer = vehicle.odometer;
+    if (vehicle.fuel_level !== undefined) form.value.fuel_level = vehicle.fuel_level;
+    
+    if (vehicle.tire_psi_front_left !== undefined) form.value.tire_psi_front_left = vehicle.tire_psi_front_left;
+    if (vehicle.tire_psi_front_right !== undefined) form.value.tire_psi_front_right = vehicle.tire_psi_front_right;
+    if (vehicle.tire_psi_rear_left !== undefined) form.value.tire_psi_rear_left = vehicle.tire_psi_rear_left;
+    if (vehicle.tire_psi_rear_right !== undefined) form.value.tire_psi_rear_right = vehicle.tire_psi_rear_right;
+
+    // Populate previously active damage pins!
+    if (vehicle.active_pins) {
+        pins.value = {
+            right: vehicle.active_pins.right || [],
+            left: vehicle.active_pins.left || [],
+            front: vehicle.active_pins.front || [],
+            rear: vehicle.active_pins.rear || []
+        };
+        
+        // Re-generate the damage_findings text from the loaded pins so the textarea reflects history
+        ['right', 'left', 'front', 'rear'].forEach(view => {
+            let findings = '';
+            pins.value[view].forEach((pin, idx) => {
+                findings += `[Pin ${idx + 1}]: ${pin.remarks || 'Damage reported.'}\n`;
+            });
+            form.value[`damage_findings_${view}`] = findings.trim();
+        });
+    }
+};
 
 // CRITICAL FIX: PREPOPULATE FROM MASTER VEHICLE STATE
 watch(() => props.shift, (newShift) => {
     if (newShift && newShift.vehicle) {
-        if (newShift.vehicle.unit_id) form.value.vehicle_unit = newShift.vehicle.unit_id;
-        if (newShift.vehicle.odometer !== undefined) form.value.odometer = newShift.vehicle.odometer;
-        if (newShift.vehicle.fuel_level !== undefined) form.value.fuel_level = newShift.vehicle.fuel_level;
-        
-        if (newShift.vehicle.tire_psi_front_left !== undefined) form.value.tire_psi_front_left = newShift.vehicle.tire_psi_front_left;
-        if (newShift.vehicle.tire_psi_front_right !== undefined) form.value.tire_psi_front_right = newShift.vehicle.tire_psi_front_right;
-        if (newShift.vehicle.tire_psi_rear_left !== undefined) form.value.tire_psi_rear_left = newShift.vehicle.tire_psi_rear_left;
-        if (newShift.vehicle.tire_psi_rear_right !== undefined) form.value.tire_psi_rear_right = newShift.vehicle.tire_psi_rear_right;
-
-        // Populate previously active damage pins!
-        if (newShift.vehicle.active_pins) {
-            pins.value = {
-                right: newShift.vehicle.active_pins.right || [],
-                left: newShift.vehicle.active_pins.left || [],
-                front: newShift.vehicle.active_pins.front || [],
-                rear: newShift.vehicle.active_pins.rear || []
-            };
-            
-            // Re-generate the damage_findings text from the loaded pins so the textarea reflects history
-            ['right', 'left', 'front', 'rear'].forEach(view => {
-                let findings = '';
-                pins.value[view].forEach((pin, idx) => {
-                    findings += `[Pin ${idx + 1}]: ${pin.remarks || 'Damage reported.'}\n`;
-                });
-                form.value[`damage_findings_${view}`] = findings.trim();
-            });
-        }
+        populateVehicleData(newShift.vehicle);
     }
 }, { immediate: true });
 
+// ALSO POPULATE WHEN VEHICLE IS MANUALLY SELECTED
+watch(() => form.value.vehicle_unit, (newUnitId) => {
+    if (newUnitId) {
+        const vehicle = vehicles.value.find(v => v.unit_id === newUnitId);
+        if (vehicle) {
+            populateVehicleData(vehicle);
+        }
+    }
+});
 
 const sigPad = ref(null);
 const hasSignature = ref(false);

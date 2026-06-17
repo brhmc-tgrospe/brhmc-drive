@@ -22,6 +22,7 @@ class Checklist extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'vehicle_id',
         'trip_id',
         'type',
         'status',

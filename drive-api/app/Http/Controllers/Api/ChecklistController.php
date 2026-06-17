@@ -18,7 +18,10 @@ class ChecklistController extends Controller
                 ->whereNull('checklists.deleted_at')
                 ->leftJoin('trips', 'checklists.trip_id', '=', 'trips.id')
                 ->leftJoin('shifts', 'trips.shift_id', '=', 'shifts.id')
-                ->leftJoin('vehicles', 'shifts.vehicle_id', '=', 'vehicles.id')
+                ->leftJoin('vehicles', function($join) {
+                    $join->on('shifts.vehicle_id', '=', 'vehicles.id')
+                         ->orOn('checklists.vehicle_id', '=', 'vehicles.id');
+                })
                 ->leftJoin('users as drivers', 'shifts.driver_id', '=', 'drivers.id')
                 ->leftJoin('users as dispatchers', 'checklists.dispatcher_id', '=', 'dispatchers.id')
                 ->select(
@@ -114,7 +117,7 @@ class ChecklistController extends Controller
         }
 
         $validated = $request->validate([
-            'shift_id' => 'required|exists:shifts,id',
+            'shift_id' => 'nullable|exists:shifts,id',
             'trip_id' => 'nullable|exists:trips,id', 
             'vehicle_unit' => 'required|string',
             'type' => 'required|string',
@@ -148,16 +151,19 @@ class ChecklistController extends Controller
                 return response()->json(['message' => 'Vehicle not found'], 404);
             }
 
-            $typeEnum = strtoupper(str_replace('-', '_', $validated['type']));
-            if (!in_array($typeEnum, ['PRE_TRIP', 'POST_TRIP'])) {
+            $typeEnum = strtoupper(str_replace(['-', ' '], '_', $validated['type']));
+            if (!in_array($typeEnum, ['PRE_TRIP', 'POST_TRIP', 'ROUTINE_MAINTENANCE_CHECK'])) {
                 $typeEnum = 'PRE_TRIP';
             }
 
-            $trip = DB::table('trips')
-                ->where('shift_id', $validated['shift_id'])
-                ->where('current_phase', '<', 8) 
-                ->orderBy('id', 'desc')
-                ->first();
+            $trip = null;
+            if (!empty($validated['shift_id'])) {
+                $trip = DB::table('trips')
+                    ->where('shift_id', $validated['shift_id'])
+                    ->where('current_phase', '<', 8) 
+                    ->orderBy('id', 'desc')
+                    ->first();
+            }
 
             $tripId = $validated['trip_id'] ?? null;
 
@@ -177,27 +183,32 @@ class ChecklistController extends Controller
                     return response()->json(['message' => 'A ' . str_replace('_', '-', $typeEnum) . ' checklist has already been submitted for this trip.'], 422);
                 }
             } elseif (!$tripId && $typeEnum === 'PRE_TRIP') {
-                $trip = \App\Models\Trip::create([
-                    'shift_id' => $validated['shift_id'],
-                    'current_phase' => 0,
-                    'is_cleared_by_dispatch' => 0,
-                ]);
-                $tripId = $trip->id;
+                if (!empty($validated['shift_id'])) {
+                    $trip = \App\Models\Trip::create([
+                        'shift_id' => $validated['shift_id'],
+                        'current_phase' => 0,
+                        'is_cleared_by_dispatch' => 0,
+                    ]);
+                    $tripId = $trip->id;
+                }
             } elseif (!$tripId) {
-                DB::rollBack();
-                return response()->json(['message' => 'No active trip sequence found for this shift.'], 404);
+                if (!empty($validated['shift_id'])) {
+                    DB::rollBack();
+                    return response()->json(['message' => 'No active trip sequence found for this shift.'], 404);
+                }
             }
 
             $checklist = \App\Models\Checklist::create([
+                'vehicle_id' => $vehicle->id,
                 'trip_id' => $tripId,
                 'type' => $typeEnum,
                 'status' => 'PENDING',
                 'condition' => $validated['condition'],
                 'driver_condition' => $validated['driver_condition'] ?? null,
                 'signature' => $validated['signature'],
-                'submitted_at' => Carbon::now(),
-            ]);
-            $checklistId = $checklist->id;
+                'dispatcher_id' => $request->user()->id,
+                'submitted_at' => now(),
+            ]);$checklistId = $checklist->id;
 
             $metaData = [
                 ['checklist_id' => $checklistId, 'category' => 'MetaData::Odometer', 'is_passed' => 1, 'remarks' => $validated['odometer']],
@@ -308,14 +319,16 @@ class ChecklistController extends Controller
             ]);
 
             if ($typeEnum === 'PRE_TRIP' && ($isBrokenVehicle || $isUnfitDriver)) {
-                \App\Models\Shift::where('id', $validated['shift_id'])->update(['status' => 'CANCELLED']);
+                if (!empty($validated['shift_id'])) {
+                    \App\Models\Shift::where('id', $validated['shift_id'])->update(['status' => 'CANCELLED']);
+                }
                 \App\Models\Checklist::where('id', $checklistId)->update(['status' => $isBrokenVehicle ? 'REJECTED' : 'CANCELLED']);
                 
                 DB::commit();
                 return response()->json(['message' => 'Checklist logged. Shift cancelled.', 'checklist_id' => $checklistId, 'cancelled' => true], 201);
             }
 
-            if ($typeEnum === 'PRE_TRIP') {
+            if ($typeEnum === 'PRE_TRIP' && $tripId) {
                 \App\Models\Trip::where('id', $tripId)->update(['current_phase' => 1]);
             }
 
@@ -327,11 +340,13 @@ class ChecklistController extends Controller
             // Catches websocket errors so they don't break the return response
             // ==========================================
             try {
-                $shift = DB::table('shifts')
-                    ->leftJoin('users', 'shifts.driver_id', '=', 'users.id')
-                    ->where('shifts.id', $validated['shift_id'])
-                    ->select('shifts.driver_id', 'shifts.scheduled_start', DB::raw("CONCAT(users.first_name, ' ', users.last_name) as driver_name"))
-                    ->first();
+                if (!empty($validated['shift_id'])) {
+                    $shift = DB::table('shifts')
+                        ->leftJoin('users', 'shifts.driver_id', '=', 'users.id')
+                        ->where('shifts.id', $validated['shift_id'])
+                        ->select('shifts.driver_id', 'shifts.scheduled_start', DB::raw("CONCAT(users.first_name, ' ', users.last_name) as driver_name"))
+                        ->first();
+                }
 
                 event(new ChecklistSubmitted(
                     $checklistId,
@@ -360,7 +375,10 @@ class ChecklistController extends Controller
                 ->whereNull('checklists.deleted_at')
                 ->leftJoin('trips', 'checklists.trip_id', '=', 'trips.id')
                 ->leftJoin('shifts', 'trips.shift_id', '=', 'shifts.id')
-                ->leftJoin('vehicles', 'shifts.vehicle_id', '=', 'vehicles.id')
+                ->leftJoin('vehicles', function($join) {
+                    $join->on('shifts.vehicle_id', '=', 'vehicles.id')
+                         ->orOn('checklists.vehicle_id', '=', 'vehicles.id');
+                })
                 ->leftJoin('users as drivers', 'shifts.driver_id', '=', 'drivers.id')
                 ->select(
                     'checklists.*',

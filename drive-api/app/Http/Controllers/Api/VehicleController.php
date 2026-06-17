@@ -51,11 +51,41 @@ class VehicleController extends Controller
                 $v->current_driver = $shift->driver_name;
                 $v->trip_id = $shift->trip_id;
                 $v->current_phase = $shift->current_phase;
+                $v->shift_id = $shift->shift_id;
             } else {
                 $v->current_driver = null;
                 $v->trip_id = null;
                 $v->current_phase = null;
+                $v->shift_id = null;
             }
+        }
+    }
+
+    /**
+     * Helper Method: Injects active damage pins into the vehicle payload.
+     */
+    private function appendActivePins($vehicles)
+    {
+        $vehicleIds = collect($vehicles)->pluck('id')->toArray();
+        if (empty($vehicleIds)) return;
+
+        $allPins = DB::table('damage_pins')
+            ->whereIn('vehicle_id', $vehicleIds)
+            ->where('status', 'Active')
+            ->get();
+
+        foreach ($vehicles as $v) {
+            $formattedPins = ['right' => [], 'left' => [], 'front' => [], 'rear' => []];
+            $itemPins = $allPins->where('vehicle_id', $v->id);
+            
+            foreach ($itemPins as $pin) {
+                $formattedPins[$pin->vehicle_view][] = [
+                    'x' => (float) $pin->x_coordinate,
+                    'y' => (float) $pin->y_coordinate,
+                    'remarks' => $pin->remarks
+                ];
+            }
+            $v->active_pins = $formattedPins;
         }
     }
 
@@ -100,6 +130,7 @@ class VehicleController extends Controller
         if ($request->boolean('all')) {
             $vehicles = $query->get();
             $this->appendActiveShiftData($vehicles); // Inject Live Data
+            $this->appendActivePins($vehicles); // Inject Live Pins
             return response()->json($vehicles);
         }
 
@@ -109,6 +140,7 @@ class VehicleController extends Controller
         
         $collection = $paginator->getCollection();
         $this->appendActiveShiftData($collection); // Inject Live Data
+        $this->appendActivePins($collection); // Inject Live Pins
         $paginator->setCollection($collection);
 
         return response()->json($paginator);
@@ -163,7 +195,9 @@ class VehicleController extends Controller
             return response()->json(['message' => 'Vehicle not found'], 404);
         }
         
-        $this->appendActiveShiftData(collect([$vehicle]));
+        $collection = collect([$vehicle]);
+        $this->appendActiveShiftData($collection);
+        $this->appendActivePins($collection);
         
         return response()->json($vehicle);
     }
@@ -200,7 +234,9 @@ class VehicleController extends Controller
         \App\Models\Vehicle::findOrFail($id)->update($validated);
 
         $updatedVehicle = DB::table('vehicles')->where('id', $id)->whereNull('deleted_at')->first();
-        $this->appendActiveShiftData(collect([$updatedVehicle]));
+        $collection = collect([$updatedVehicle]);
+        $this->appendActiveShiftData($collection);
+        $this->appendActivePins($collection);
 
         if ($previousStatus !== $validated['status']) {
             try {
@@ -278,7 +314,9 @@ class VehicleController extends Controller
         ]);
 
         $updatedVehicle = DB::table('vehicles')->where('id', $id)->whereNull('deleted_at')->first();
-        $this->appendActiveShiftData(collect([$updatedVehicle]));
+        $collection = collect([$updatedVehicle]);
+        $this->appendActiveShiftData($collection);
+        $this->appendActivePins($collection);
 
         return response()->json([
             'message' => 'Image saved to database successfully.',

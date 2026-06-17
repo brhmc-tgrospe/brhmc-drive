@@ -24,15 +24,15 @@
       <!-- Modal Body -->
       <div class="p-5 flex-1 overflow-y-auto">
         
-        <!-- VIEW CHECKLIST DETAILS TOGGLE -->
-        <button v-if="!isRejecting" @click="isViewingDetails = !isViewingDetails" class="w-full mb-5 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2 border border-blue-200 shadow-sm">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-          {{ isViewingDetails ? 'Hide Checklist Details' : 'Review Submitted Checklist' }}
-        </button>
-
         <!-- CHECKLIST DETAILS EXPANDED VIEW -->
-        <div v-if="isViewingDetails && !isRejecting" class="mb-5 p-4 border border-slate-200 rounded-xl bg-slate-50 animate-fade-in-up">
-           <h4 class="font-bold text-slate-700 mb-3 border-b border-slate-200 pb-2 text-sm">Checklist Summary</h4>
+        <div v-if="!isRejecting" class="mb-5 p-4 border border-slate-200 rounded-xl bg-slate-50 animate-fade-in-up">
+           <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-3">
+             <h4 class="font-bold text-slate-700 text-sm">Checklist Summary</h4>
+             <button @click="$emit('view-details')" class="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded border border-blue-100 hover:bg-blue-100 transition-colors">
+               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+               View Full Report
+             </button>
+           </div>
            <div class="grid grid-cols-2 gap-3 text-xs mb-3">
              <div><span class="text-slate-500 block">Driver</span><span class="font-bold text-slate-800">{{ checklist?.outgoing_driver || 'N/A' }}</span></div>
              <div><span class="text-slate-500 block">Odometer</span><span class="font-bold text-slate-800">{{ checklist?.odometer ? checklist.odometer + ' km' : 'N/A' }}</span></div>
@@ -40,7 +40,7 @@
              <div><span class="text-slate-500 block">Condition</span><span class="font-bold text-slate-800">{{ checklist?.condition || 'N/A' }}</span></div>
            </div>
            <div>
-             <span class="text-slate-500 text-xs block">Driver Remarks</span>
+             <span class="text-slate-500 text-xs block">Remarks</span>
              <p class="font-medium text-slate-700 text-xs italic bg-white p-2 rounded border border-slate-100 mt-1">{{ checklist?.remarks || 'No issues reported.' }}</p>
            </div>
         </div>
@@ -138,7 +138,7 @@ const props = defineProps({
   checklist: Object
 });
 
-const emit = defineEmits(['close', 'approve', 'reject']);
+const emit = defineEmits(['close', 'approve', 'reject', 'view-details']);
 const authStore = useAuthStore();
 
 const isRejecting = ref(false);

@@ -209,6 +209,7 @@
       @close="isReviewModalOpen = false"
       @approve="handleApprove"
       @reject="handleReject"
+      @view-details="viewChecklist(targetChecklist)"
     />
     
     <ChecklistViewReport 

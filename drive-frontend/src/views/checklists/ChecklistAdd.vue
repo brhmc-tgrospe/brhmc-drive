@@ -44,8 +44,8 @@
             <div class="flex justify-between items-end mb-3">
                <h4 class="font-extrabold text-slate-700 text-sm">Comprehensive Checklist</h4>
                <div class="flex gap-2">
-                  <button type="button" @click="devToolunClear" class="text-[9px] font-bold text-teal-600 bg-teal-50 border border-teal-100 px-2 py-1 rounded uppercase hover:bg-teal-100 transition-colors">Check All</button>
-                  <button type="button" @click="devToolClear" class="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-2 py-1 rounded uppercase hover:bg-slate-200 transition-colors">Uncheck All</button>
+                  <button type="button" @click="devToolunClear(form)" class="text-[9px] font-bold text-teal-600 bg-teal-50 border border-teal-100 px-2 py-1 rounded uppercase hover:bg-teal-100 transition-colors">Check All</button>
+                  <button type="button" @click="devToolClear(form)" class="text-[9px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-2 py-1 rounded uppercase hover:bg-slate-200 transition-colors">Uncheck All</button>
                </div>
             </div>
             
@@ -146,10 +146,10 @@
                                      <select v-model="selectedPinToRemove.right" class="text-[9px] font-bold text-slate-600 bg-white border border-slate-200 rounded px-1 py-0.5 outline-none cursor-pointer">
                                         <option v-for="(pin, idx) in pins.right" :key="idx" :value="idx">Pin {{ idx + 1 }}</option>
                                      </select>
-                                     <button @click="removeSelectedPin('right')" type="button" class="text-[9px] font-bold text-red-500 uppercase bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded transition-colors">Remove</button>
+                                     <button @click="removeSelectedPin('right', form)" type="button" class="text-[9px] font-bold text-red-500 uppercase bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded transition-colors">Remove</button>
                                   </div>
                                </div>
-                               <div class="relative w-full aspect-[2/1] bg-white rounded-lg overflow-hidden border-2 border-slate-300 border-dashed cursor-crosshair hover:bg-slate-50 transition-colors flex items-center justify-center group" @click="dropPin($event, 'right')">
+                               <div class="relative w-full aspect-[2/1] bg-white rounded-lg overflow-hidden border-2 border-slate-300 border-dashed cursor-crosshair hover:bg-slate-50 transition-colors flex items-center justify-center group" @click="dropPin($event, 'right', form)">
                                   <img src="/images/ambulance/right-view.png" alt="Right View Outline" class="absolute inset-0 w-full h-full object-contain pointer-events-none p-2 opacity-80 group-hover:opacity-100 transition-opacity" />
                                   <span class="text-slate-400 font-bold uppercase tracking-widest text-xs pointer-events-none group-hover:opacity-0 transition-opacity z-10 bg-white/50 px-2 py-1 rounded">Tap to drop pin</span>
                                   <div v-for="(pin, idx) in pins.right" :key="idx" class="absolute w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center -translate-x-1/2 -translate-y-1/2 shadow-lg ring-2 ring-white pointer-events-none z-20" :style="{ left: pin.x + '%', top: pin.y + '%' }">{{ idx + 1 }}</div>
@@ -165,10 +165,10 @@
                                      <select v-model="selectedPinToRemove.left" class="text-[9px] font-bold text-slate-600 bg-white border border-slate-200 rounded px-1 py-0.5 outline-none cursor-pointer">
                                         <option v-for="(pin, idx) in pins.left" :key="idx" :value="idx">Pin {{ idx + 1 }}</option>
                                      </select>
-                                     <button @click="removeSelectedPin('left')" type="button" class="text-[9px] font-bold text-red-500 uppercase bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded transition-colors">Remove</button>
+                                     <button @click="removeSelectedPin('left', form)" type="button" class="text-[9px] font-bold text-red-500 uppercase bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded transition-colors">Remove</button>
                                   </div>
                                </div>
-                               <div class="relative w-full aspect-[2/1] bg-white rounded-lg overflow-hidden border-2 border-slate-300 border-dashed cursor-crosshair hover:bg-slate-50 transition-colors flex items-center justify-center group" @click="dropPin($event, 'left')">
+                               <div class="relative w-full aspect-[2/1] bg-white rounded-lg overflow-hidden border-2 border-slate-300 border-dashed cursor-crosshair hover:bg-slate-50 transition-colors flex items-center justify-center group" @click="dropPin($event, 'left', form)">
                                   <img src="/images/ambulance/left-view.png" alt="Left View Outline" class="absolute inset-0 w-full h-full object-contain pointer-events-none p-2 opacity-80 group-hover:opacity-100 transition-opacity" />
                                   <span class="text-slate-400 font-bold uppercase tracking-widest text-xs pointer-events-none group-hover:opacity-0 transition-opacity z-10 bg-white/50 px-2 py-1 rounded">Tap to drop pin</span>
                                   <div v-for="(pin, idx) in pins.left" :key="idx" class="absolute w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center -translate-x-1/2 -translate-y-1/2 shadow-lg ring-2 ring-white pointer-events-none z-20" :style="{ left: pin.x + '%', top: pin.y + '%' }">{{ idx + 1 }}</div>
@@ -188,10 +188,10 @@
                                             <option v-for="(pin, idx) in pins.front" :key="idx" :value="idx">Pin {{ idx + 1 }}</option>
                                          </select>
                                          <!-- FIX: Updated X to Remove -->
-                                         <button @click="removeSelectedPin('front')" type="button" class="text-[9px] font-bold text-red-500 uppercase bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded transition-colors">Remove</button>
+                                         <button @click="removeSelectedPin('front', form)" type="button" class="text-[9px] font-bold text-red-500 uppercase bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded transition-colors">Remove</button>
                                       </div>
                                    </div>
-                                   <div class="relative w-full aspect-square bg-white rounded-lg overflow-hidden border-2 border-slate-300 border-dashed cursor-crosshair hover:bg-slate-50 transition-colors flex items-center justify-center group" @click="dropPin($event, 'front')">
+                                   <div class="relative w-full aspect-square bg-white rounded-lg overflow-hidden border-2 border-slate-300 border-dashed cursor-crosshair hover:bg-slate-50 transition-colors flex items-center justify-center group" @click="dropPin($event, 'front', form)">
                                       <img src="/images/ambulance/front-view.png" alt="Front View Outline" class="absolute inset-0 w-full h-full object-contain pointer-events-none p-2 opacity-80 group-hover:opacity-100 transition-opacity" />
                                       <span class="text-slate-400 font-bold uppercase tracking-widest text-[10px] pointer-events-none group-hover:opacity-0 transition-opacity z-10 bg-white/50 px-2 py-0.5 rounded">Tap</span>
                                       <div v-for="(pin, idx) in pins.front" :key="idx" class="absolute w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center -translate-x-1/2 -translate-y-1/2 shadow-lg ring-2 ring-white pointer-events-none z-20" :style="{ left: pin.x + '%', top: pin.y + '%' }">{{ idx + 1 }}</div>
@@ -209,10 +209,10 @@
                                             <option v-for="(pin, idx) in pins.rear" :key="idx" :value="idx">Pin {{ idx + 1 }}</option>
                                          </select>
                                          <!-- FIX: Updated X to Remove -->
-                                         <button @click="removeSelectedPin('rear')" type="button" class="text-[9px] font-bold text-red-500 uppercase bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded transition-colors">Remove</button>
+                                         <button @click="removeSelectedPin('rear', form)" type="button" class="text-[9px] font-bold text-red-500 uppercase bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded transition-colors">Remove</button>
                                       </div>
                                    </div>
-                                   <div class="relative w-full aspect-square bg-white rounded-lg overflow-hidden border-2 border-slate-300 border-dashed cursor-crosshair hover:bg-slate-50 transition-colors flex items-center justify-center group" @click="dropPin($event, 'rear')">
+                                   <div class="relative w-full aspect-square bg-white rounded-lg overflow-hidden border-2 border-slate-300 border-dashed cursor-crosshair hover:bg-slate-50 transition-colors flex items-center justify-center group" @click="dropPin($event, 'rear', form)">
                                       <img src="/images/ambulance/rear-view.png" alt="Rear View Outline" class="absolute inset-0 w-full h-full object-contain pointer-events-none p-2 opacity-80 group-hover:opacity-100 transition-opacity" />
                                       <span class="text-slate-400 font-bold uppercase tracking-widest text-[10px] pointer-events-none group-hover:opacity-0 transition-opacity z-10 bg-white/50 px-2 py-0.5 rounded">Tap</span>
                                       <div v-for="(pin, idx) in pins.rear" :key="idx" class="absolute w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center -translate-x-1/2 -translate-y-1/2 shadow-lg ring-2 ring-white pointer-events-none z-20" :style="{ left: pin.x + '%', top: pin.y + '%' }">{{ idx + 1 }}</div>
@@ -243,13 +243,11 @@
           <div class="pt-4 border-t border-slate-100">
              <div class="flex justify-between items-end mb-2">
                 <label class="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase">Inspector Signature <span class="text-red-500">*</span></label>
-                <button v-if="hasSignature" @click="clearSignature" type="button" class="text-[9px] font-bold text-red-500 uppercase bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded transition-colors">Clear Signature</button>
+                <button v-if="hasSignature" @click="$refs.sigPad.clearSignature()" type="button" class="text-[9px] font-bold text-red-500 uppercase bg-red-50 hover:bg-red-100 px-2 py-0.5 rounded transition-colors">Clear Signature</button>
              </div>
              <div class="border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 relative h-32 touch-none group hover:border-teal-400 transition-colors">
-                <canvas ref="signaturePad" class="absolute inset-0 w-full h-full cursor-crosshair"
-                        @mousedown="startDrawing" @mousemove="draw" @mouseup="stopDrawing" @mouseleave="stopDrawing"
-                        @touchstart.prevent="startDrawing" @touchmove.prevent="draw" @touchend.prevent="stopDrawing"></canvas>
-                <div v-if="!hasSignature" class="absolute inset-0 flex items-center justify-center opacity-40 select-none text-sm font-bold text-slate-400 pointer-events-none group-hover:opacity-20 transition-opacity">Sign Here</div>
+                <SignaturePad ref="sigPad" @update:hasSignature="val => hasSignature = val" class="absolute inset-0 z-10" />
+                <div v-if="!hasSignature" class="absolute inset-0 flex items-center justify-center opacity-40 select-none text-sm font-bold text-slate-400 pointer-events-none group-hover:opacity-20 transition-opacity z-0">Sign Here</div>
              </div>
           </div>
           
@@ -265,7 +263,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue';
+import { ref, watch } from 'vue';
+import { useChecklist } from '../../composables/useChecklist';
+import SignaturePad from '../../components/SignaturePad.vue';
 
 const props = defineProps({
   shift: { type: Object, default: null }
@@ -273,31 +273,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'saved']);
 
-// DISPLAY NAMES (Synced with DriverChecklistModal)
-const displayNames = {
-    engineCabin: { 
-      battery: 'Battery', oil_level: 'Oil Level', water_coolant: 'Water Coolant', brakes: 'Brakes', 
-      siren: 'Siren', horn: 'Horn', power_locks: 'Power Locks', windshield_wipers: 'Windshield Wipers', 
-      front_ac: 'Front A/C', rear_ac: 'Rear A/C', exhaust_vent: 'Exhaust Vent' 
-    },
-    lights: { 
-      dashboard: 'Dashboard', front_interior: 'Front Interior', rear_interior: 'Rear Interior', 
-      headlights_high: 'Headlights (High)', headlights_low: 'Headlights (Low)', foglamps: 'Foglamps', 
-      park_light: 'Park Light', tail_light: 'Tail Light', signal_front: 'Signal (Front)', signal_rear: 'Signal (Rear)', 
-      hazard: 'Hazard Lights', reverse: 'Reverse Lights', brake_light: 'Brake Lights', 
-      overhead_warning: 'Warning Light Bar', front_scene: 'Front Scene', rear_scene: 'Rear Scene' 
-    },
-    equipment: { 
-      vhf_base_radio: 'VHF Base Radio', mech_vent: 'Mech Vent', mech_vent_battery: 'Mech Vent (Battery)', 
-      cardiac_monitor: 'Cardiac Monitor (Defib)', cardiac_monitor_battery: 'Cardiac Monitor (Battery)', 
-      aed: 'AED', aed_battery: 'AED (Battery)', suction_machine: 'Suction Machine', ecg_machine: 'ECG Machine', 
-      ac_inverter: 'AC Inverter', o2_regulator: 'O2 Regulator/Humidifier', o2_pressure_gauge: 'O2 Pressure Gauge', 
-      splint_adult: 'Splint Adult', splints_child: 'Splints Child', scoop_stretcher: 'Scoop Stretcher', 
-      spine_board: 'Spine Board', traction_splint: 'Traction Splint', kendricks_extrication: 'Kendricks Extrication', 
-      cpr_machine: 'CPR Machine', seats_condition: 'Seats Condition', dashboard_condition: 'Dashboard Condition', 
-      driver_compartment_clean: 'Driver Compartment Clean', back_compartment_clean: 'Back Compartment Clean' 
-    }
-};
+const { displayNames, pins, selectedPinToRemove, dropPin, removeSelectedPin, devToolClear, devToolunClear } = useChecklist();
 
 // Accordion State
 const openSections = ref({
@@ -332,8 +308,6 @@ const form = ref({
 });
 
 // INTERACTIVE PIN LOGIC
-const pins = ref({ right: [], left: [], front: [], rear: [] });
-const selectedPinToRemove = ref({ right: '', left: '', front: '', rear: '' });
 
 // CRITICAL FIX: PREPOPULATE FROM MASTER VEHICLE STATE
 watch(() => props.shift, (newShift) => {
@@ -369,108 +343,11 @@ watch(() => props.shift, (newShift) => {
 }, { immediate: true });
 
 
-// Helper buttons
-const devToolunClear = () => { 
-    ['engineCabin', 'lights', 'equipment'].forEach(s => Object.keys(form.value[s]).forEach(k => form.value[s][k] = true)); 
-};
-
-const devToolClear = () => { 
-    ['engineCabin', 'lights', 'equipment'].forEach(s => Object.keys(form.value[s]).forEach(k => form.value[s][k] = false)); 
-};
-
-const dropPin = (event, view) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
-    
-    pins.value[view].push({ x, y });
-    const pinNumber = pins.value[view].length;
-    
-    selectedPinToRemove.value[view] = pinNumber - 1;
-    
-    const prefix = `[Pin ${pinNumber}]: `;
-    const currentText = form.value[`damage_findings_${view}`] || '';
-    
-    if (currentText.trim() === '') {
-        form.value[`damage_findings_${view}`] = prefix;
-    } else {
-        form.value[`damage_findings_${view}`] = currentText + `\n${prefix}`;
-    }
-};
-
-const removeSelectedPin = (view) => {
-    const idx = selectedPinToRemove.value[view];
-    if (idx === '' || idx === null || idx === undefined) return;
-    
-    const pinNumToRemove = idx + 1;
-    
-    pins.value[view].splice(idx, 1);
-    
-    let text = form.value[`damage_findings_${view}`] || '';
-    let lines = text.split('\n');
-    
-    let startIndex = lines.findIndex(l => l.startsWith(`[Pin ${pinNumToRemove}]:`));
-    if (startIndex !== -1) {
-        let endIndex = startIndex + 1;
-        while(endIndex < lines.length && !lines[endIndex].match(/^\[Pin \d+\]:/)) {
-            endIndex++;
-        }
-        lines.splice(startIndex, endIndex - startIndex);
-    }
-    
-    lines = lines.map(line => {
-        const match = line.match(/^\[Pin (\d+)\]:(.*)/);
-        if (match) {
-            const currentNum = parseInt(match[1], 10);
-            if (currentNum > pinNumToRemove) {
-                return `[Pin ${currentNum - 1}]:${match[2]}`;
-            }
-        }
-        return line;
-    });
-    
-    form.value[`damage_findings_${view}`] = lines.join('\n').trim();
-    selectedPinToRemove.value[view] = pins.value[view].length > 0 ? pins.value[view].length - 1 : '';
-};
-
-// SIGNATURE PAD LOGIC
-const signaturePad = ref(null);
-const isDrawing = ref(false);
+const sigPad = ref(null);
 const hasSignature = ref(false);
 
-onMounted(async () => {
-    await nextTick();
-    if(signaturePad.value) {
-        const rect = signaturePad.value.parentNode.getBoundingClientRect();
-        signaturePad.value.width = rect.width;
-        signaturePad.value.height = rect.height;
-    }
-});
-
-const getCoords = (e) => {
-  const rect = signaturePad.value.getBoundingClientRect();
-  const scaleX = signaturePad.value.width / rect.width;
-  const scaleY = signaturePad.value.height / rect.height;
-  const clientX = (e.touches ? e.touches[0].clientX : e.clientX);
-  const clientY = (e.touches ? e.touches[0].clientY : e.clientY);
-  return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
-};
-const startDrawing = (e) => { isDrawing.value = true; const c = getCoords(e); const ctx = signaturePad.value.getContext('2d'); ctx.beginPath(); ctx.moveTo(c.x, c.y); };
-const draw = (e) => { if(!isDrawing.value) return; const c = getCoords(e); const ctx = signaturePad.value.getContext('2d'); ctx.lineWidth = 3; ctx.lineCap='round'; ctx.strokeStyle='#0f172a'; ctx.lineTo(c.x, c.y); ctx.stroke(); };
-const stopDrawing = () => { if(!isDrawing.value) return; isDrawing.value = false; hasSignature.value = true; form.value.signature = signaturePad.value.toDataURL('image/png'); };
-const clearSignature = () => { 
-    if(signaturePad.value) {
-        const ctx = signaturePad.value.getContext('2d'); 
-        ctx.clearRect(0,0, signaturePad.value.width, signaturePad.value.height); 
-    }
-    hasSignature.value = false; 
-    form.value.signature = '';
-};
-
 const submitInspection = () => {
-    if (!form.value.signature) {
-        form.value.signature = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-    }
+    form.value.signature = (hasSignature.value && sigPad.value && sigPad.value.getSignatureData()) ? sigPad.value.getSignatureData() : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
     emit('saved', { ...form.value, pins: pins.value });
 };
 </script>

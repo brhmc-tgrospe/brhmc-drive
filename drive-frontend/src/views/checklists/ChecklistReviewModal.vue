@@ -81,23 +81,13 @@
             <span v-if="!hasSignature" class="absolute text-slate-400 text-sm font-medium select-none pointer-events-none transition-opacity duration-200">Draw signature here</span>
             
             <!-- Real HTML5 Canvas for drawing -->
-            <canvas 
-              ref="signatureCanvas" 
-              class="absolute inset-0 w-full h-full touch-none"
-              @mousedown="startDrawing"
-              @mousemove="draw"
-              @mouseup="stopDrawing"
-              @mouseleave="stopDrawing"
-              @touchstart.prevent="startDrawing"
-              @touchmove.prevent="draw"
-              @touchend.prevent="stopDrawing"
-            ></canvas>
+            <SignaturePad ref="sigPad" :show="show" class="absolute inset-0 z-10" @update:hasSignature="val => { hasSignature = val; if(val) signatureError = false; }" />
 
-            <div class="absolute bottom-6 left-8 right-8 border-b-2 border-slate-200 pointer-events-none"></div>
+            <div class="absolute bottom-6 left-8 right-8 border-b-2 border-slate-200 pointer-events-none z-0"></div>
             
             <!-- Signature Controls -->
-            <div v-if="hasSignature" class="absolute top-2 right-2 flex gap-2 z-10 animate-fade-in-up">
-              <button type="button" @click="clearSignature" class="px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-red-600 bg-white border border-slate-200 rounded-lg shadow-sm transition-colors">Clear</button>
+            <div v-if="hasSignature" class="absolute top-2 right-2 flex gap-2 z-20 animate-fade-in-up">
+              <button type="button" @click="$refs.sigPad.clearSignature()" class="px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-red-600 bg-white border border-slate-200 rounded-lg shadow-sm transition-colors">Clear</button>
             </div>
           </div>
           <p class="text-xs text-slate-500 text-right mt-1">Dispatcher: {{ authStore.user?.first_name || 'Current User' }}</p>
@@ -139,8 +129,9 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue';
+import { ref, watch } from 'vue';
 import { useAuthStore } from '../../stores/auth';
+import SignaturePad from '../../components/SignaturePad.vue';
 
 const props = defineProps({
   show: Boolean,
@@ -155,13 +146,11 @@ const isViewingDetails = ref(false);
 const rejectionReason = ref('');
 const rejectionReasonError = ref(false);
 
-const signatureCanvas = ref(null);
-const isDrawing = ref(false);
+const sigPad = ref(null);
 const hasSignature = ref(false);
 const signatureError = ref(false);
-let ctx = null;
 
-watch(() => props.show, async (newVal) => {
+watch(() => props.show, (newVal) => {
   if (newVal) {
     isRejecting.value = false;
     isViewingDetails.value = false;
@@ -169,66 +158,8 @@ watch(() => props.show, async (newVal) => {
     rejectionReasonError.value = false;
     hasSignature.value = false;
     signatureError.value = false;
-    
-    await nextTick();
-    setTimeout(initCanvas, 150); // Ensure modal is fully rendered before canvas initialization
   }
 });
-
-const initCanvas = () => {
-  const canvas = signatureCanvas.value;
-  if (!canvas) return;
-  ctx = canvas.getContext('2d');
-  
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
-  
-  ctx.strokeStyle = '#1e293b'; 
-  ctx.lineWidth = 3;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-};
-
-const getPos = (e) => {
-  const canvas = signatureCanvas.value;
-  const rect = canvas.getBoundingClientRect();
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-  return {
-    x: clientX - rect.left,
-    y: clientY - rect.top
-  };
-};
-
-const startDrawing = (e) => {
-  if (!ctx) return;
-  isDrawing.value = true;
-  signatureError.value = false;
-  const pos = getPos(e);
-  ctx.beginPath();
-  ctx.moveTo(pos.x, pos.y);
-};
-
-const draw = (e) => {
-  if (!isDrawing.value || !ctx) return;
-  const pos = getPos(e);
-  ctx.lineTo(pos.x, pos.y);
-  ctx.stroke();
-  hasSignature.value = true;
-};
-
-const stopDrawing = () => {
-  isDrawing.value = false;
-  if (ctx) ctx.closePath();
-};
-
-const clearSignature = () => {
-  if (!ctx || !signatureCanvas.value) return;
-  ctx.clearRect(0, 0, signatureCanvas.value.width, signatureCanvas.value.height);
-  hasSignature.value = false;
-  ctx.beginPath();
-};
 
 const cancelRejection = () => {
   isRejecting.value = false;
@@ -236,30 +167,17 @@ const cancelRejection = () => {
 };
 
 const handleApprove = () => {
-  // Bypassed for E2E testing
-  // if (!hasSignature.value) {
-  //   signatureError.value = true;
-  //   return;
-  // }
-  
-  // Safe extraction to prevent empty signatures
-  const signatureData = (hasSignature.value && signatureCanvas.value) ? signatureCanvas.value.toDataURL('image/png') : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+  const signatureData = (hasSignature.value && sigPad.value && sigPad.value.getSignatureData()) ? sigPad.value.getSignatureData() : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
   emit('approve', { id: props.checklist.id, signature: signatureData });
 };
 
 const handleReject = () => {
-  // Bypassed for E2E testing
-  // if (!hasSignature.value && isRejecting.value === false) {
-  //   signatureError.value = true;
-  //   return;
-  // }
   if (!rejectionReason.value.trim()) {
     rejectionReasonError.value = true;
     return;
   }
   
-  // Safe extraction
-  const signatureData = (hasSignature.value && signatureCanvas.value) ? signatureCanvas.value.toDataURL('image/png') : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+  const signatureData = (hasSignature.value && sigPad.value && sigPad.value.getSignatureData()) ? sigPad.value.getSignatureData() : 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
   emit('reject', { id: props.checklist.id, reason: rejectionReason.value, signature: signatureData });
 };
 </script>

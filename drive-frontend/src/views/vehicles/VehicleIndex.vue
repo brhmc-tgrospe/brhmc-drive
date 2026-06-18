@@ -83,11 +83,11 @@
                   <svg v-else class="w-3 h-3 ml-1 opacity-0 group-hover:opacity-40 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4 -4 4 4m0 6l-4 4 -4 -4"></path></svg>
                 </div>
               </th>
-
-              <th @click="toggleSort('base_location')" class="py-2 px-3 sm:py-3 sm:px-4 font-bold whitespace-nowrap cursor-pointer hover:text-teal-600 transition-colors group select-none">
+              
+              <th @click="toggleSort('make_model')" class="py-2 px-3 sm:py-3 sm:px-4 font-bold whitespace-nowrap cursor-pointer hover:text-teal-600 transition-colors group select-none">
                 <div class="flex items-center">
-                  Base Location
-                  <svg v-if="sortBy === 'base_location'" :class="{'rotate-180': sortDir === 'desc'}" class="w-3 h-3 ml-1 transition-transform text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+                  Make & Model
+                  <svg v-if="sortBy === 'make_model'" :class="{'rotate-180': sortDir === 'desc'}" class="w-3 h-3 ml-1 transition-transform text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
                   <svg v-else class="w-3 h-3 ml-1 opacity-0 group-hover:opacity-40 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4 -4 4 4m0 6l-4 4 -4 -4"></path></svg>
                 </div>
               </th>
@@ -124,7 +124,6 @@
                 <div class="font-bold text-slate-700 text-[11px] sm:text-sm">{{ vehicle.make_model }}</div>
                 <div class="text-[9px] sm:text-xs text-slate-500">{{ vehicle.vehicle_type }}</div>
               </td>
-              <td class="py-2 px-3 sm:py-3 sm:px-4 whitespace-nowrap text-[11px] sm:text-sm">{{ vehicle.base_location }}</td>
               <td class="py-2 px-3 sm:py-3 sm:px-4 whitespace-nowrap text-[11px] sm:text-sm">{{ vehicle.odometer.toLocaleString() }} km</td>
               <td class="py-2 px-3 sm:py-3 sm:px-4">
                   <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-bold rounded-full uppercase tracking-wider"

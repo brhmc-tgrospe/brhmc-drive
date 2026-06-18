@@ -23,6 +23,14 @@ apiClient.interceptors.request.use(
         // If the token exists, attach it as a Bearer authorization header
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
+            
+            // Exclude the logout endpoint itself from resetting the timer
+            if (config.url !== '/api/logout-timeout') {
+                const authStore = useAuthStore();
+                if (authStore.isAuthenticated) {
+                    authStore.resetTimeout();
+                }
+            }
         }
         
         return config;

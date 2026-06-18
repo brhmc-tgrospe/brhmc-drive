@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use App\Events\ShiftScheduled;
 use Illuminate\Support\Facades\Log;
 
 class VehicleShiftController extends Controller
@@ -245,6 +246,13 @@ class VehicleShiftController extends Controller
 
             // ONLY MANAGE VEHICLE STATUS
             \App\Models\Vehicle::findOrFail($validated['vehicle_id'])->update(['status' => 'SCHEDULED']);
+
+            // Notify driver via WebSocket that they have been scheduled
+            try {
+                event(new ShiftScheduled($newShift));
+            } catch (\Exception $broadcastError) {
+                Log::warning('ShiftScheduled broadcast failed: ' . $broadcastError->getMessage());
+            }
 
             return response()->json(['message' => 'Shift scheduled.', 'shift_id' => $shiftId], 201);
             

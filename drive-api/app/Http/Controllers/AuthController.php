@@ -99,6 +99,36 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Log the user out due to inactivity timeout.
+     */
+    public function logoutTimeout(\Illuminate\Http\Request $request)
+    {
+        $user = $request->user();
+
+        // Log the timeout event
+        activity('authentication')
+            ->causedBy($user)
+            ->performedOn($user)
+            ->withProperties([
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ])
+            ->event('logout')
+            ->log("{$user->first_name} {$user->last_name} session timed out due to inactivity");
+
+        /** @var \Laravel\Sanctum\PersonalAccessToken $token */
+        $token = $user->currentAccessToken();
+        
+        if ($token) {
+            $token->delete();
+        }
+
+        return response()->json([
+            'message' => 'User logged out due to inactivity.'
+        ]);
+    }
+
     public function user(Request $request)
     {
         $user = $request->user();

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api from '../axios';
+import { useNotificationStore } from './notifications';
 
 export const useAuthStore = defineStore('auth', () => {
     const user = ref(null);
@@ -20,6 +21,7 @@ export const useAuthStore = defineStore('auth', () => {
             const response = await api.get('/api/user');
             user.value = response.data.user || response.data; // Accommodate different API shapes
             role.value = response.data.role || response.data.user?.role;
+            initInactivityTracker();
         } catch (error) {
             clearAuth(); // Call the cleanup function on failure
         }
@@ -42,6 +44,7 @@ export const useAuthStore = defineStore('auth', () => {
             user.value = response.data.user;
             role.value = response.data.user?.role;
             
+            initInactivityTracker();
             return true; // Tell Login.vue it was successful
         } catch (error) {
             // FORMAT ERRORS FOR THE PREMIUM LOGIN UI
@@ -74,6 +77,8 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.removeItem('original_token');
         localStorage.removeItem('original_user');
         isImpersonating.value = false;
+        
+        stopInactivityTracker();
     };
 
     // --- IMPOSTOR LOGIC ---
@@ -89,6 +94,11 @@ export const useAuthStore = defineStore('auth', () => {
             localStorage.setItem('token', response.data.token);
             user.value = response.data.user;
             isImpersonating.value = true;
+            
+            // 3. Re-initialize notifications for the new role
+            const notifStore = useNotificationStore();
+            notifStore.resetListeners();
+            notifStore.listenForAlerts();
             
             return response;
         } catch (error) {
@@ -115,6 +125,11 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.removeItem('original_token');
         localStorage.removeItem('original_user');
         isImpersonating.value = false;
+
+        // 4. Re-initialize notifications for original role
+        const notifStore = useNotificationStore();
+        notifStore.resetListeners();
+        notifStore.listenForAlerts();
     };
 
     // --- CAPABILITY SECURITY CHECK ---
@@ -125,11 +140,85 @@ export const useAuthStore = defineStore('auth', () => {
         // Check if the permission exists in their array
         return user.value.permissions?.includes(permission);
     };
+
+    // --- INACTIVITY TIMEOUT LOGIC ---
+    let inactivityTimer = null;
+    const TIMEOUT_MS = 60 * 60 * 1000; // 1 hour
+    let isTrackingInactivity = false;
+
+    const resetTimeout = () => {
+        if (!isAuthenticated.value) return;
+        
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+        }
+        
+        inactivityTimer = setTimeout(() => {
+            handleTimeout();
+        }, TIMEOUT_MS);
+    };
+
+    const handleTimeout = async () => {
+        if (!isAuthenticated.value) return;
+        
+        try {
+            // Tell backend we timed out (so it logs correctly)
+            await api.post('/api/logout-timeout');
+        } catch (err) {
+            console.error('Timeout logout API failed', err);
+        } finally {
+            clearAuth(); // Wipes local state
+            
+            // Show toast notification
+            const toast = useToastStore();
+            toast.addToast('Session Expired', 'You have been logged out due to inactivity.', 'error');
+            
+            // Redirect smoothly without breaking router
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
+        }
+    };
+
+    const _interactionListener = () => {
+        // Simple throttle to avoid resetting timer 100 times a second during mousemove
+        if (!inactivityTimer) return;
+        resetTimeout();
+    };
+
+    const initInactivityTracker = () => {
+        if (isTrackingInactivity) return;
+        isTrackingInactivity = true;
+        
+        resetTimeout();
+        
+        // Listen to physical user interactions
+        window.addEventListener('mousemove', _interactionListener, { passive: true });
+        window.addEventListener('keydown', _interactionListener, { passive: true });
+        window.addEventListener('click', _interactionListener, { passive: true });
+        window.addEventListener('touchstart', _interactionListener, { passive: true });
+    };
+
+    const stopInactivityTracker = () => {
+        if (!isTrackingInactivity) return;
+        isTrackingInactivity = false;
+        
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = null;
+        }
+        
+        window.removeEventListener('mousemove', _interactionListener);
+        window.removeEventListener('keydown', _interactionListener);
+        window.removeEventListener('click', _interactionListener);
+        window.removeEventListener('touchstart', _interactionListener);
+    };
     
     // EXPOSE EVERYTHING TO VUE COMPONENTS
     return { 
         user, role, authErrors, isAuthenticated, isImpersonating, 
         login, logout, fetchUser, getToken, clearAuth, 
-        impersonate, stopImpersonating, can 
+        impersonate, stopImpersonating, can,
+        initInactivityTracker, stopInactivityTracker, resetTimeout
     };
 });

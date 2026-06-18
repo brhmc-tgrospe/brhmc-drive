@@ -245,6 +245,29 @@ class VehicleController extends Controller
             } catch (\Exception $broadcastError) {
                 \Illuminate\Support\Facades\Log::warning('Broadcast failed: ' . $broadcastError->getMessage());
             }
+
+            // Notify users with map tracking permissions when a vehicle is grounded or restored
+            try {
+                $groundedStatuses = ['BREAKDOWN', 'MAINTENANCE'];
+                $admins = \App\Models\User::where('legacy_permissions', 'LIKE', '%"dashboard.live_map_tracker"%')
+                                          ->orWhere('role', 'developer')
+                                          ->get();
+                $vehicleUnit = $updatedVehicle->unit_id ?? 'Unknown';
+
+                if (in_array($validated['status'], $groundedStatuses)) {
+                    $reason = $validated['status'] === 'BREAKDOWN' ? 'Breakdown reported' : 'Scheduled maintenance';
+                    foreach ($admins as $admin) {
+                        $admin->notify(new \App\Notifications\VehicleGrounded($vehicleUnit, $reason));
+                    }
+                } elseif ($validated['status'] === 'READY' && in_array($previousStatus, $groundedStatuses)) {
+                    $mechanicName = request()->user()->first_name ?? 'Maintenance';
+                    foreach ($admins as $admin) {
+                        $admin->notify(new \App\Notifications\VehicleRestored($vehicleUnit, $mechanicName));
+                    }
+                }
+            } catch (\Exception $notifyError) {
+                \Illuminate\Support\Facades\Log::warning('Vehicle notification failed: ' . $notifyError->getMessage());
+            }
         }
 
         return response()->json([

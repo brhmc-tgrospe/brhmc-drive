@@ -59,21 +59,41 @@ export const useNotificationStore = defineStore('notifications', {
             this.items.forEach(n => n.read = true);
         },
 
+        resetListeners() {
+            if (this.isListening) {
+                const authStore = useAuthStore();
+                const user = authStore.user;
+                if (user?.id) {
+                    echo.leaveChannel(`driver.${user.id}`);
+                    echo.leaveChannel(`App.Models.User.${user.id}`);
+                }
+                echo.leaveChannel('fleet-updates');
+                echo.leaveChannel('dispatch.alerts');
+                
+                if (this._shiftCheckInterval) {
+                    clearInterval(this._shiftCheckInterval);
+                    this._shiftCheckInterval = null;
+                }
+                
+                // Clear state so it restarts fully
+                this.isListening = false;
+                this._notifiedShiftIds.clear();
+            }
+        },
+
         listenForAlerts() {
             if (this.isListening) return;
             this.isListening = true;
 
             const authStore = useAuthStore();
-            const user = authStore.user;
-            const role = user?.role;
-            const userId = user?.id;
+            const userId = authStore.user?.id;
 
-            console.log(`[DRIVE Notifications] Initializing for role: ${role}, userId: ${userId}`);
+            console.log(`[DRIVE Notifications] Initializing for user: ${userId}`);
 
             // =====================================================
             // DISPATCHER / ADMIN / DEVELOPER — fleet-wide view
             // =====================================================
-            if (['dispatcher', 'admin', 'developer'].includes(role)) {
+            if (authStore.can('dashboard.live_map_tracker') || authStore.can('dashboard.live_trip_tracking')) {
                 const fleetChannel = echo.channel('fleet-updates');
 
                 fleetChannel.listen('.vehicle.status.changed', (e) => {
@@ -91,6 +111,33 @@ export const useNotificationStore = defineStore('notifications', {
                         color
                     );
                 });
+
+                // Vehicle Grounded / Restored notifications (Laravel Notification broadcast)
+                // These are sent to each user's private notification channel
+                try {
+                    echo.private(`App.Models.User.${userId}`)
+                        .notification((notification) => {
+                            if (notification.type === 'grounded') {
+                                const unit = notification.vehicle_unit || 'A Vehicle';
+                                this.addNotification(
+                                    'grounded',
+                                    'Vehicle Grounded',
+                                    `<span class="font-bold">${unit}</span> has been grounded. Reason: ${notification.reason || 'Unknown'}`,
+                                    'red'
+                                );
+                            } else if (notification.type === 'restored') {
+                                const unit = notification.vehicle_unit || 'A Vehicle';
+                                this.addNotification(
+                                    'restored',
+                                    'Vehicle Restored',
+                                    `<span class="font-bold">${unit}</span> has been repaired by ${notification.mechanic_name || 'maintenance'} and is now READY.`,
+                                    'teal'
+                                );
+                            }
+                        });
+                } catch (err) {
+                    console.warn('[DRIVE Notifications] User notification channel auth failed (non-critical):', err);
+                }
 
                 fleetChannel.listen('.App\\Events\\ChecklistSubmitted', (e) => {
                     console.log('[DRIVE Notifications] Checklist submitted:', e);
@@ -119,18 +166,12 @@ export const useNotificationStore = defineStore('notifications', {
                 });
 
                 fleetChannel.listen('.App\\Events\\TripPhaseAdvanced', (e) => {
-                    console.log('[DRIVE Notifications] Trip phase advanced:', e);
-                    const driver = e.driver_name || 'A driver';
-                    let phaseText = '';
-                    if (e.phase === 4) phaseText = 'has arrived at patient location';
-                    else if (e.phase === 6) phaseText = 'has arrived at the hospital';
-                    else if (e.phase === 8) phaseText = 'has completed the run';
-
-                    if (phaseText !== '') {
+                    // Only dispatchers/admins need to see fleet-wide phase updates
+                    if (e.phase === 2 || e.phase === 8) { // Just key milestones
                         this.addNotification(
                             'trip',
-                            'Trip Update',
-                            `Trip ${e.trip_id}: <span class="font-bold">${driver}</span> ${phaseText}.`,
+                            `Trip ${e.trip_id} Update`,
+                            `Trip has ${e.phase === 2 ? 'started' : 'completed'}.`,
                             'indigo'
                         );
                     }
@@ -153,13 +194,13 @@ export const useNotificationStore = defineStore('notifications', {
                     console.warn('[DRIVE Notifications] Private channel auth failed (non-critical):', err);
                 }
 
-                console.log('[DRIVE Notifications] Dispatcher listeners active.');
+                console.log('[DRIVE Notifications] Fleet channels bound.');
             }
 
             // =====================================================
             // DRIVER — personal channel only + shift reminders
             // =====================================================
-            if (role === 'driver' && userId) {
+            if (authStore.can('execute_shifts') && userId) {
                 try {
                     const driverChannel = echo.private(`driver.${userId}`);
 
@@ -174,6 +215,19 @@ export const useNotificationStore = defineStore('notifications', {
                             `${type} Submitted`,
                             `Your <span class="font-bold">${type}</span> inspection for <span class="font-bold">${vehicle}</span> has been received.`,
                             'teal'
+                        );
+                    });
+
+                    // Shift scheduled notification (dispatcher assigned you a new shift)
+                    driverChannel.listen('.shift.scheduled', (e) => {
+                        console.log('[DRIVE Notifications] New shift scheduled for you:', e);
+                        const scheduledStart = e.scheduled_start ? new Date(e.scheduled_start.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                        const plate = e.vehicle_plate || 'your assigned vehicle';
+                        this.addNotification(
+                            'shift',
+                            'New Shift Assigned',
+                            `You have been scheduled for a new shift${scheduledStart ? ` at <span class="font-bold">${scheduledStart}</span>` : ''} with <span class="font-bold">${plate}</span>.`,
+                            'blue'
                         );
                     });
 
@@ -227,7 +281,7 @@ export const useNotificationStore = defineStore('notifications', {
                 const now = new Date();
 
                 for (const shift of shifts) {
-                    const startTime = new Date(shift.start_time);
+                    const startTime = new Date(shift.start_time.replace(' ', 'T'));
                     const diffMs = startTime - now;
                     const diffMinutes = diffMs / (1000 * 60);
 

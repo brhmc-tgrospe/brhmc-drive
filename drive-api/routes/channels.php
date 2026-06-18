@@ -14,17 +14,22 @@ Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
 // Dispatcher Live Map Channel
 Broadcast::channel('dispatch.fleet', function ($user) {
-    // Only Developers, Admins, and Dispatchers can view the live map
-    return in_array($user->role, ['developer', 'admin', 'dispatcher']);
+    // Only users with map tracker permissions can view the live map
+    return $user->hasPermission('dashboard.live_map_tracker');
 });
 
 // Emergency Alerts Channel
 Broadcast::channel('dispatch.alerts', function ($user) {
-    // Only Developers, Admins, and Dispatchers receive the red emergency bell notifications
-    return in_array($user->role, ['developer', 'admin', 'dispatcher']);
+    // Only users with incident view permissions receive the red emergency bell notifications
+    return $user->hasPermission('incident.view');
 });
 
 // Per-Driver Private Channel
 Broadcast::channel('driver.{userId}', function ($user, $userId) {
     return (int) $user->id === (int) $userId;
+});
+
+// Laravel Notification Channel (for VehicleGrounded/VehicleRestored broadcast notifications)
+Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
+    return (int) $user->id === (int) $id;
 });

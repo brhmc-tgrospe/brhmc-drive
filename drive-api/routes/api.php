@@ -24,6 +24,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/logout-timeout', [AuthController::class, 'logoutTimeout']);
     Route::get('/activity-logs', [ActivityLogController::class, 'index']);
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);

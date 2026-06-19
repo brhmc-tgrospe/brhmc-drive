@@ -186,10 +186,18 @@
     </transition>
 
     <!-- MODAL COMPONENTS -->
-    <UserAdd v-if="isAddModalOpen" @close="isAddModalOpen = false" @saved="handleSaveAction" />
-    <UserEdit v-if="isEditModalOpen" :user="targetUser" @close="isEditModalOpen = false" @saved="handleSaveAction" />
+    <UserModal v-if="isAddModalOpen || isEditModalOpen" :user="isEditModalOpen ? targetUser : null" @close="isAddModalOpen = false; isEditModalOpen = false;" @saved="handleSaveAction" />
     <UserView v-if="isViewModalOpen" :user="targetUser" @close="isViewModalOpen = false" />
-    <UserDelete v-if="isDeleteModalOpen" :user="targetUser" :batch-ids="selectedItems" @close="isDeleteModalOpen = false" @deleted="handleSaveAction" />
+    <ConfirmModal 
+      :show="isDeleteModalOpen" 
+      :title="selectedItems.length > 0 ? 'Delete Multiple Users?' : 'Delete User?'"
+      :message="selectedItems.length > 0 ? `Are you absolutely sure you want to permanently remove ${selectedItems.length} selected users? This action cannot be undone.` : `Are you absolutely sure you want to permanently delete ${targetUser?.first_name} ${targetUser?.last_name}? This action cannot be undone.`"
+      type="danger"
+      confirmText="Yes, Delete"
+      :isLoading="isDeleting"
+      @confirm="executeDelete"
+      @cancel="isDeleteModalOpen = false"
+    />
     
     <!-- Confirm Impersonate Modal -->
     <div v-if="isConfirmModalOpen" class="fixed inset-0 z-[70] flex items-center justify-center p-4">
@@ -218,10 +226,9 @@ import { useAuthStore } from '../../stores/auth';
 import { useToastStore } from '../../stores/toast';
 import { useRouter } from 'vue-router';
 
-import UserAdd from './UserAdd.vue';
-import UserEdit from './UserEdit.vue';
+import UserModal from './UserModal.vue';
 import UserView from './UserView.vue';
-import UserDelete from './UserDelete.vue';
+import ConfirmModal from '../../components/modals/ConfirmModal.vue';
 import { useACL } from '../../composables/useACL';
 
 const authStore = useAuthStore();
@@ -262,6 +269,7 @@ const isViewModalOpen = ref(false);
 const isDeleteModalOpen = ref(false);
 const isConfirmModalOpen = ref(false);
 const targetUser = ref(null);
+const isDeleting = ref(false);
 
 const loadUsers = async () => {
     isLoading.value = true;
@@ -314,8 +322,29 @@ onMounted(loadUsers);
 const openCreateForm = () => isAddModalOpen.value = true;
 const openEditForm = (user) => { targetUser.value = user; isEditModalOpen.value = true; };
 const openViewModal = (user) => { targetUser.value = user; isViewModalOpen.value = true; };
-const deleteUser = (user) => { targetUser.value = user; isDeleteModalOpen.value = true; };
+const deleteUser = (user) => { targetUser.value = user; selectedItems.value = []; isDeleteModalOpen.value = true; };
 const confirmBatchDelete = () => { targetUser.value = null; isDeleteModalOpen.value = true; };
+
+const executeDelete = async () => {
+    isDeleting.value = true;
+    try {
+        const isBatch = selectedItems.value.length > 0;
+        if (isBatch) {
+            await Promise.all(selectedItems.value.map(id => api.delete(`/api/users/${id}`)));
+            toastStore.show(`${selectedItems.value.length} users removed.`, 'success');
+        } else {
+            await api.delete(`/api/users/${targetUser.value.id}`);
+            toastStore.show('User deleted permanently.', 'success');
+        }
+        isDeleteModalOpen.value = false;
+        handleSaveAction();
+    } catch (error) {
+        toastStore.show(error.response?.data?.message || "Failed to delete user(s).", 'error');
+        isDeleteModalOpen.value = false;
+    } finally {
+        isDeleting.value = false;
+    }
+};
 
 const triggerImpersonate = (user) => {
     targetUser.value = user;

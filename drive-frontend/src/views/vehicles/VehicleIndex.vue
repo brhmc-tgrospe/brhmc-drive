@@ -192,13 +192,9 @@
     </transition>
 
     <!-- MODULAR COMPONENTS -->
-    <VehicleAdd v-if="isAddModalOpen" 
-    @close="isAddModalOpen = false" 
-    @saved="handleSaveAction" />
-
-    <VehicleEdit v-if="isEditModalOpen" 
-    :vehicle="targetVehicle" 
-    @close="isEditModalOpen = false"
+    <VehicleModal v-if="isAddModalOpen || isEditModalOpen" 
+    :vehicle="isEditModalOpen ? targetVehicle : null"
+    @close="isAddModalOpen = false; isEditModalOpen = false;" 
     @saved="handleSaveAction" />
 
     <VehicleView v-if="isViewModalOpen" 
@@ -206,11 +202,16 @@
     @close="isViewModalOpen = false" 
     @updated="handleSaveAction" />
 
-    <VehicleDelete v-if="isDeleteModalOpen" 
-    :vehicle="targetVehicle" 
-    :batch-ids="selectedItems"
-    @close="isDeleteModalOpen = false" 
-    @deleted="handleSaveAction" />
+    <ConfirmModal 
+      :show="isDeleteModalOpen" 
+      :title="selectedItems.length > 0 ? 'Delete Multiple Vehicles?' : 'Delete Vehicle?'"
+      :message="selectedItems.length > 0 ? `Are you absolutely sure you want to permanently remove ${selectedItems.length} selected vehicles from the fleet? This action cannot be undone.` : `Are you absolutely sure you want to permanently remove ${targetVehicle?.unit_id} from the fleet? This action cannot be undone.`"
+      type="danger"
+      confirmText="Yes, Delete"
+      :isLoading="isDeleting"
+      @confirm="executeDelete"
+      @cancel="isDeleteModalOpen = false"
+    />
 
   </div>
 </template>
@@ -222,10 +223,9 @@ import { useFleetStore } from '../../stores/fleet';
 import { useToastStore } from '../../stores/toast';
 
 // Import Modular Components
-import VehicleAdd from './VehicleAdd.vue';
-import VehicleEdit from './VehicleEdit.vue';
+import VehicleModal from './VehicleModal.vue';
 import VehicleView from './VehicleView.vue';
-import VehicleDelete from './VehicleDelete.vue';
+import ConfirmModal from '../../components/modals/ConfirmModal.vue';
 import { useACL } from '../../composables/useACL';
 
 const { hasPermission } = useACL();
@@ -362,6 +362,7 @@ const isEditModalOpen = ref(false);
 const isViewModalOpen = ref(false);
 const isDeleteModalOpen = ref(false);
 const targetVehicle = ref(null);
+const isDeleting = ref(false);
 
 const openAddModal = () => isAddModalOpen.value = true;
 
@@ -383,6 +384,27 @@ const openDeleteModal = (vehicle) => {
 const confirmBatchDelete = () => {
     targetVehicle.value = null;
     isDeleteModalOpen.value = true;
+};
+
+const executeDelete = async () => {
+    isDeleting.value = true;
+    try {
+        const isBatch = selectedItems.value.length > 0;
+        if (isBatch) {
+            await Promise.all(selectedItems.value.map(id => fleetStore.deleteVehicle(id)));
+            toastStore.show(`${selectedItems.value.length} vehicles removed.`, 'success');
+        } else {
+            await fleetStore.deleteVehicle(targetVehicle.value.id);
+            toastStore.show(`${targetVehicle.value.unit_id} was removed.`, 'success');
+        }
+        isDeleteModalOpen.value = false;
+        handleSaveAction();
+    } catch (error) {
+        toastStore.show("Failed to delete vehicle(s).", 'error');
+        isDeleteModalOpen.value = false;
+    } finally {
+        isDeleting.value = false;
+    }
 };
 
 const handleSaveAction = async () => {

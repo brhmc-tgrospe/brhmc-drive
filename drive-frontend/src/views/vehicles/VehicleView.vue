@@ -13,7 +13,7 @@
       <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
         <div class="bg-white p-3 sm:p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center">
           <div class="w-full h-48 sm:h-64 bg-slate-100 rounded-lg overflow-hidden border border-slate-200 relative flex items-center justify-center">
-            <img v-if="vehicle.image_path" :src="vehicle.image_path.startsWith('data:image') ? vehicle.image_path : `http://localhost:8000/storage/${vehicle.image_path}`" alt="Vehicle Image" class="object-cover w-full h-full" />
+            <img v-if="vehicle.image_path" :src="vehicle.image_path.startsWith('data:image') ? vehicle.image_path : `http://localhost:8000/storage/${vehicle.image_path}?t=${Date.now()}`" alt="Vehicle Image" class="object-cover w-full h-full" />
             <div v-else class="text-slate-400 flex flex-col items-center">
               <svg class="w-8 h-8 sm:w-12 sm:h-12 mb-1 sm:mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
               <span class="text-xs sm:text-sm font-medium">No Image Uploaded</span>

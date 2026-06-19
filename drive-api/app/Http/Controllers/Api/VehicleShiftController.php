@@ -373,11 +373,7 @@ public function update(Request $request, $id)
             }
 
             if ((int)$shift->driver_id !== (int)$validated['driver_id']) {
-                if (in_array($shift->status, ['PENDING', 'SCHEDULED'])) {
-                    $oldDriverStillScheduled = DB::table('shifts')->where('driver_id', $shift->driver_id)->where('id', '!=', $id)->whereIn('status', ['PENDING', 'SCHEDULED'])->exists();
-                    DB::table('users')->where('id', $shift->driver_id)->update(['driver_status' => $oldDriverStillScheduled ? 'SCHEDULED' : 'READY']);
-                }
-                DB::table('users')->where('id', $validated['driver_id'])->update(['driver_status' => 'SCHEDULED']);
+                // The users table does not have a driver_status column, so we do not attempt to update it.
             }
 
             \App\Models\Shift::findOrFail($id)->update([

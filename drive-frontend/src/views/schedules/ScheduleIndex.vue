@@ -210,19 +210,12 @@
     </transition>
 
     <!-- MODULAR COMPONENTS -->
-    <ScheduleAdd 
-      v-if="isAddModalOpen" 
+    <ScheduleModal 
+      v-if="isAddModalOpen || isEditModalOpen" 
+      :shift="isEditModalOpen ? targetShift : null" 
       :drivers="users" 
       :vehicles="vehicles" 
-      @close="isAddModalOpen = false" 
-      @saved="handleScheduleChange" 
-    />
-    <ScheduleEdit 
-      v-if="isEditModalOpen" 
-      :shift="targetShift" 
-      :drivers="users" 
-      :vehicles="vehicles" 
-      @close="isEditModalOpen = false" 
+      @close="isAddModalOpen = false; isEditModalOpen = false;" 
       @saved="handleScheduleChange" 
     />
     <ScheduleView 
@@ -230,12 +223,17 @@
       :shift="targetShift" 
       @close="isViewModalOpen = false" 
     />
-    <ScheduleDelete 
-      v-if="isDeleteModalOpen" 
-      :shift="targetShift" 
-      :batch-ids="selectedItems"
-      @close="isDeleteModalOpen = false" 
-      @deleted="handleScheduleChange" 
+    <ConfirmModal 
+      :show="isDeleteModalOpen" 
+      :title="selectedItems.length > 0 ? 'Delete Multiple Shifts?' : 'Cancel Shift?'"
+      :message="selectedItems.length > 0 
+        ? `Are you sure you want to delete ${selectedItems.length} selected shifts? This action cannot be undone.` 
+        : `Are you sure you want to delete this scheduled shift for ${targetShift?.driver?.first_name}? The vehicle will be released back to the available pool.`"
+      type="danger"
+      confirmText="Yes, Delete"
+      :isLoading="isDeleting"
+      @confirm="executeDelete"
+      @cancel="isDeleteModalOpen = false"
     />
 
     <!-- Force Start Modal -->
@@ -267,11 +265,10 @@ import { useFleetStore } from '../../stores/fleet';
 import { useAuthStore } from '../../stores/auth';
 import { useACL } from '../../composables/useACL';
 import TableSkeleton from '../../components/ui/TableSkeleton.vue';
+import ConfirmModal from '../../components/modals/ConfirmModal.vue';
 
-import ScheduleAdd from './ScheduleAdd.vue';
-import ScheduleEdit from './ScheduleEdit.vue';
+import ScheduleModal from './ScheduleModal.vue';
 import ScheduleView from './ScheduleView.vue';
-import ScheduleDelete from './ScheduleDelete.vue';
 
 const { hasPermission } = useACL();
 const shiftStore = useShiftStore();
@@ -314,6 +311,7 @@ const isDeleteModalOpen = ref(false);
 const isForceStartModalOpen = ref(false);
 const forceStartRemark = ref('');
 const isForceStarting = ref(false);
+const isDeleting = ref(false);
 const targetShift = ref(null);
 
 const currentPage = ref(1);
@@ -397,6 +395,27 @@ const openViewModal = (shift) => { targetShift.value = shift; isViewModalOpen.va
 const openDeleteModal = (shift) => { targetShift.value = shift; isDeleteModalOpen.value = true; };
 const confirmBatchDelete = () => { targetShift.value = null; isDeleteModalOpen.value = true; };
 const openForceStartModal = (shift) => { targetShift.value = shift; forceStartRemark.value = ''; isForceStartModalOpen.value = true; };
+
+const executeDelete = async () => {
+    isDeleting.value = true;
+    try {
+        const isBatch = selectedItems.value.length > 0;
+        if (isBatch) {
+            await Promise.all(selectedItems.value.map(id => shiftStore.deleteShift(id)));
+            toastStore.show(`${selectedItems.value.length} shifts deleted successfully.`, 'success');
+        } else {
+            await shiftStore.deleteShift(targetShift.value.id);
+            toastStore.show('Shift deleted successfully. Vehicle released.', 'success');
+        }
+        isDeleteModalOpen.value = false;
+        handleScheduleChange();
+    } catch (error) {
+        toastStore.show(error.response?.data?.message || 'Failed to delete shift(s).', 'error');
+        isDeleteModalOpen.value = false;
+    } finally {
+        isDeleting.value = false;
+    }
+};
 
 const executeForceStart = async () => {
     isForceStarting.value = true;

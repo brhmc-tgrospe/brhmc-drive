@@ -28,9 +28,9 @@ export const useFleetStore = defineStore('fleet', {
     // ... ADDED THIS FUNCTION ...
     async addVehicle(vehicleData) {
         try {
-            await api.post('/api/vehicles', vehicleData);
+            const res = await api.post('/api/vehicles', vehicleData);
             await this.fetchFleet();
-            return true;
+            return res.data;
         } catch (error) {
             console.error('Failed to add vehicle:', error);
             throw error;

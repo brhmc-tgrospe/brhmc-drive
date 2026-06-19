@@ -14,10 +14,23 @@ const form = ref({
 const isLoading = ref(false);
 const showPassword = ref(false);
 
+const isSessionExpired = ref(false);
+
 // Optional: Clear errors when the user starts typing again
 const clearErrors = () => {
     authStore.authErrors = {};
+    isSessionExpired.value = false;
 };
+
+onMounted(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('expired') === '1') {
+        isSessionExpired.value = true;
+        
+        // Clean up URL so it doesn't stay there if they refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+});
 
 const handleLogin = async () => {
     isLoading.value = true;
@@ -145,6 +158,20 @@ const handleLogin = async () => {
           <div class="mb-8 lg:mb-10 text-center lg:text-left">
             <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">Welcome back</h2>
             <p class="text-xs sm:text-sm text-slate-500 mt-2 font-medium">Please enter your credentials to access the dashboard.</p>
+          </div>
+
+          <!-- Persistent Session Expired Alert -->
+          <div v-if="isSessionExpired" 
+               class="mb-8 p-4 bg-orange-50 border border-orange-200/60 rounded-xl flex items-start gap-3 animate-fade-in shadow-sm">
+            <div class="bg-orange-100 p-1.5 rounded-lg shrink-0 mt-0.5">
+              <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-orange-800">Session Expired</h3>
+              <p class="mt-1 text-xs font-medium text-orange-700">
+                You have been automatically logged out due to inactivity. Please log in again to continue.
+              </p>
+            </div>
           </div>
 
           <!-- Elegant Error Alert -->

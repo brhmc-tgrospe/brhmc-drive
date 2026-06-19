@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('telemetry:prune --days=30')->dailyAt('02:00');// Runs every night at 2 AM
 Schedule::command('telemetry:check-stale --minutes=10')->everyMinute();
+Schedule::command('app:check-vehicle-expirations')->dailyAt('00:00');
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

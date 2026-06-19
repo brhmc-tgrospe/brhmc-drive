@@ -65,9 +65,19 @@
                 <label class="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">Odometer (km)</label>
                 <input type="number" v-model="form.odometer" required min="0" class="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-slate-200 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500" />
              </div>
-             <div>
+              <div>
                 <label class="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">Base Location</label>
                 <input type="text" v-model="form.base_location" required class="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-slate-200 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500" />
+             </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 sm:gap-4">
+             <div>
+                <label class="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">Registration Expiry</label>
+                <input type="date" v-model="form.registration_expiry_date" class="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-slate-200 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500" />
+             </div>
+             <div>
+                <label class="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">Insurance Expiry</label>
+                <input type="date" v-model="form.insurance_expiry_date" class="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-slate-200 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500" />
              </div>
           </div>
           

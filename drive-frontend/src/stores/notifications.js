@@ -57,6 +57,49 @@ export const useNotificationStore = defineStore('notifications', {
         },
         markAllAsRead() {
             this.items.forEach(n => n.read = true);
+            // Also mark as read in database
+            api.post('/api/notifications/mark-read').catch(() => {});
+        },
+        
+        async clearAll() {
+            this.items = [];
+            try {
+                await api.delete('/api/notifications');
+            } catch (err) {
+                console.warn('[DRIVE Notifications] Failed to clear notifications from DB:', err);
+            }
+        },
+
+        async fetchFromDatabase() {
+            try {
+                const response = await api.get('/api/notifications');
+                const dbNotifications = response.data || [];
+                for (const n of dbNotifications) {
+                    // Avoid duplicates
+                    if (this.items.find(i => i.id === n.id)) continue;
+                    
+                    let color = 'blue';
+                    if (n.type === 'urgent' || n.type === 'grounded') color = 'red';
+                    else if (n.type === 'restored') color = 'teal';
+                    else if (n.type === 'warning') color = 'orange';
+
+                    this.items.push({
+                        id: n.id,
+                        type: n.type,
+                        title: n.type === 'urgent' ? 'Expiry Alert' : n.type === 'warning' ? 'Expiry Warning' : 'Notification',
+                        message: n.message,
+                        color,
+                        read: n.read,
+                        timestamp: n.timestamp
+                    });
+                }
+                // Sort newest first
+                this.items.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                // Cap at 50
+                if (this.items.length > 50) this.items.length = 50;
+            } catch (err) {
+                console.warn('[DRIVE Notifications] Failed to fetch from DB:', err);
+            }
         },
 
         resetListeners() {
@@ -81,7 +124,7 @@ export const useNotificationStore = defineStore('notifications', {
             }
         },
 
-        listenForAlerts() {
+        async listenForAlerts() {
             if (this.isListening) return;
             this.isListening = true;
 
@@ -89,6 +132,9 @@ export const useNotificationStore = defineStore('notifications', {
             const userId = authStore.user?.id;
 
             console.log(`[DRIVE Notifications] Initializing for user: ${userId}`);
+
+            // Fetch persisted notifications from database
+            await this.fetchFromDatabase();
 
             // =====================================================
             // DISPATCHER / ADMIN / DEVELOPER — fleet-wide view
@@ -132,6 +178,20 @@ export const useNotificationStore = defineStore('notifications', {
                                     'Vehicle Restored',
                                     `<span class="font-bold">${unit}</span> has been repaired by ${notification.mechanic_name || 'maintenance'} and is now READY.`,
                                     'teal'
+                                );
+                            } else if (notification.type === 'urgent') {
+                                this.addNotification(
+                                    'expiry',
+                                    'Expiry Alert',
+                                    notification.message || 'A vehicle document has expired.',
+                                    'red'
+                                );
+                            } else if (notification.type === 'warning') {
+                                this.addNotification(
+                                    'expiry',
+                                    'Expiry Warning',
+                                    notification.message || 'A vehicle document is expiring soon.',
+                                    'orange'
                                 );
                             }
                         });

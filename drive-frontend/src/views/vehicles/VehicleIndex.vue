@@ -93,6 +93,7 @@
               </th>
               
               <th class="py-2 px-3 sm:py-3 sm:px-4 font-bold whitespace-nowrap">Odometer</th>
+              <th class="py-2 px-3 sm:py-3 sm:px-4 font-bold whitespace-nowrap">Expiry Dates</th>
               <th @click="toggleSort('status')" class="py-2 px-3 sm:py-3 sm:px-4 font-bold whitespace-nowrap cursor-pointer hover:text-teal-600 transition-colors group select-none">
                 <div class="flex items-center">
                   Status
@@ -125,6 +126,20 @@
                 <div class="text-[9px] sm:text-xs text-slate-500">{{ vehicle.vehicle_type }}</div>
               </td>
               <td class="py-2 px-3 sm:py-3 sm:px-4 whitespace-nowrap text-[11px] sm:text-sm">{{ vehicle.odometer.toLocaleString() }} km</td>
+              <td class="py-2 px-3 sm:py-3 sm:px-4 whitespace-nowrap">
+                <div class="flex items-center gap-1.5 text-[10px] sm:text-xs">
+                  <span class="text-slate-400 w-8">Reg:</span>
+                  <span :class="getExpiryColor(vehicle.registration_expiry_date)">
+                    {{ formatDate(vehicle.registration_expiry_date) }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-1.5 text-[10px] sm:text-xs mt-0.5">
+                  <span class="text-slate-400 w-8">Ins:</span>
+                  <span :class="getExpiryColor(vehicle.insurance_expiry_date)">
+                    {{ formatDate(vehicle.insurance_expiry_date) }}
+                  </span>
+                </div>
+              </td>
               <td class="py-2 px-3 sm:py-3 sm:px-4">
                   <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-bold rounded-full uppercase tracking-wider"
                       :class="{
@@ -218,6 +233,24 @@ const toastStore = useToastStore();
 const fleetStore = useFleetStore();
 
 // --- CLIENT-SIDE TABLE STATE ---
+const getExpiryColor = (dateString) => {
+    if (!dateString) return 'text-slate-400';
+    const expiry = new Date(dateString);
+    const now = new Date();
+    const diffTime = expiry - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return 'text-red-600 font-bold'; // Expired
+    if (diffDays <= 30) return 'text-orange-500 font-bold'; // < 1 month
+    if (diffDays <= 90) return 'text-amber-500 font-bold'; // < 3 months
+    return 'text-slate-600 font-medium'; // Safe
+};
+
+const formatDate = (dateString) => {
+    if (!dateString) return 'Not Set';
+    return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
 const searchQuery = ref('');
 const perPage = ref(10);
 const currentPage = ref(1);

@@ -166,6 +166,8 @@ class VehicleController extends Controller
             'status' => 'required|in:READY,IN_USE,MAINTENANCE,BREAKDOWN,SCHEDULED',
             'odometer' => 'required|numeric|min:0',
             'base_location' => 'required|string',
+            'registration_expiry_date' => 'nullable|date',
+            'insurance_expiry_date' => 'nullable|date',
         ]);
 
         $newVehicle = \App\Models\Vehicle::create($validated);
@@ -228,6 +230,8 @@ class VehicleController extends Controller
             'status' => 'required|in:READY,IN_USE,MAINTENANCE,BREAKDOWN,SCHEDULED',
             'odometer' => 'required|numeric|min:0',
             'base_location' => 'required|string',
+            'registration_expiry_date' => 'nullable|date',
+            'insurance_expiry_date' => 'nullable|date',
         ]);
 
         $previousStatus = $vehicle->status;

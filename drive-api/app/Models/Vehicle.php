@@ -23,7 +23,9 @@ class Vehicle extends Model
         'odometer',
         'base_location',
         'assigned_driver_id',
-        'image_path'
+        'image_path',
+        'registration_expiry_date',
+        'insurance_expiry_date'
     ];
 
     public function getActivitylogOptions(): LogOptions

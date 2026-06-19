@@ -30,6 +30,8 @@
             <div class="flex justify-between p-3 sm:p-4"><span class="text-slate-500 font-medium">Current Status</span><span class="font-bold text-blue-600">{{ vehicle.status.replace('_', ' ') }}</span></div>
             <div class="flex justify-between p-3 sm:p-4"><span class="text-slate-500 font-medium">Odometer</span><span class="font-bold text-slate-800">{{ vehicle.odometer.toLocaleString() }} km</span></div>
             <div class="flex justify-between p-3 sm:p-4"><span class="text-slate-500 font-medium">Base Location</span><span class="font-bold text-slate-800">{{ vehicle.base_location }}</span></div>
+            <div class="flex justify-between p-3 sm:p-4"><span class="text-slate-500 font-medium">Registration Expiry</span><span :class="getExpiryColor(vehicle.registration_expiry_date)">{{ formatDate(vehicle.registration_expiry_date) }}</span></div>
+            <div class="flex justify-between p-3 sm:p-4"><span class="text-slate-500 font-medium">Insurance Expiry</span><span :class="getExpiryColor(vehicle.insurance_expiry_date)">{{ formatDate(vehicle.insurance_expiry_date) }}</span></div>
           </div>
         </div>
       </div>
@@ -48,4 +50,22 @@ const props = defineProps({
 const emit = defineEmits(['close', 'updated']);
 const fleetStore = useFleetStore();
 const toastStore = useToastStore();
+
+const getExpiryColor = (dateString) => {
+    if (!dateString) return 'text-slate-400';
+    const expiry = new Date(dateString);
+    const now = new Date();
+    const diffTime = expiry - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return 'text-red-600 font-bold'; // Expired
+    if (diffDays <= 30) return 'text-orange-500 font-bold'; // < 1 month
+    if (diffDays <= 90) return 'text-amber-500 font-bold'; // < 3 months
+    return 'text-slate-600 font-bold'; // Safe
+};
+
+const formatDate = (dateString) => {
+    if (!dateString) return 'Not Set';
+    return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
 </script>

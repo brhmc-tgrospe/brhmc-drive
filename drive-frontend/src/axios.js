@@ -24,8 +24,17 @@ apiClient.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
             
-            // Exclude the logout endpoint itself from resetting the timer
-            if (config.url !== '/api/logout-timeout') {
+            // Background polling endpoints that should NOT reset the inactivity timer
+            const backgroundUrls = [
+                '/api/logout-timeout',
+                '/api/shifts/my-shifts',
+                '/api/telemetry/ping',
+                '/sanctum/csrf-cookie'
+            ];
+            
+            const isBackground = backgroundUrls.some(url => config.url?.includes(url));
+            
+            if (!isBackground) {
                 const authStore = useAuthStore();
                 if (authStore.isAuthenticated) {
                     authStore.resetTimeout();

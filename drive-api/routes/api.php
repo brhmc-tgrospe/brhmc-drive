@@ -123,5 +123,30 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/archive/{type}', [\App\Http\Controllers\ArchiveController::class, 'index']);
     Route::post('/archive/{type}/{id}/restore', [\App\Http\Controllers\ArchiveController::class, 'restore']);
     Route::delete('/archive/{type}/{id}/force', [\App\Http\Controllers\ArchiveController::class, 'forceDelete']);
+
+    // ==========================================
+    // NOTIFICATION ROUTES
+    // ==========================================
+    Route::get('/notifications', function (Request $request) {
+        return $request->user()->notifications()->latest()->take(50)->get()->map(function ($n) {
+            return [
+                'id' => $n->id,
+                'type' => $n->data['type'] ?? 'info',
+                'message' => $n->data['message'] ?? '',
+                'vehicle_unit' => $n->data['vehicle_unit'] ?? null,
+                'expiry_type' => $n->data['expiry_type'] ?? null,
+                'read' => !is_null($n->read_at),
+                'timestamp' => $n->created_at->toISOString(),
+            ];
+        });
+    });
+    Route::post('/notifications/mark-read', function (Request $request) {
+        $request->user()->unreadNotifications->markAsRead();
+        return response()->json(['message' => 'All notifications marked as read.']);
+    });
+    Route::delete('/notifications', function (Request $request) {
+        $request->user()->notifications()->delete();
+        return response()->json(['message' => 'All notifications cleared.']);
+    });
 });
 

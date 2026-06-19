@@ -143,7 +143,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     // --- INACTIVITY TIMEOUT LOGIC ---
     let inactivityTimer = null;
-    const TIMEOUT_MS = 60 * 60 * 1000; // 1 hour
+    const TIMEOUT_MS = 3600000; // 1 hour
     let isTrackingInactivity = false;
 
     const resetTimeout = () => {
@@ -169,20 +169,19 @@ export const useAuthStore = defineStore('auth', () => {
         } finally {
             clearAuth(); // Wipes local state
             
-            // Show toast notification
-            const toast = useToastStore();
-            toast.addToast('Session Expired', 'You have been logged out due to inactivity.', 'error');
-            
             // Redirect smoothly without breaking router
             if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
+                window.location.href = '/login?expired=1';
             }
         }
     };
 
+    let _lastInteraction = 0;
     const _interactionListener = () => {
-        // Simple throttle to avoid resetting timer 100 times a second during mousemove
-        if (!inactivityTimer) return;
+        // Real throttle: only reset once per 30 seconds max
+        const now = Date.now();
+        if (now - _lastInteraction < 30000) return;
+        _lastInteraction = now;
         resetTimeout();
     };
 

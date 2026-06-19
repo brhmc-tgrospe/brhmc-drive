@@ -52,6 +52,16 @@
                 <input type="text" v-model="form.base_location" required class="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-slate-200 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500" />
              </div>
           </div>
+          <div class="grid grid-cols-2 gap-3 sm:gap-4 mt-3 sm:mt-4">
+             <div>
+                <label class="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">Registration Expiry</label>
+                <input type="date" v-model="form.registration_expiry_date" class="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-slate-200 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500" />
+             </div>
+             <div>
+                <label class="block text-[10px] sm:text-xs font-bold text-slate-500 uppercase mb-1">Insurance Expiry</label>
+                <input type="date" v-model="form.insurance_expiry_date" class="w-full px-2 py-1.5 sm:px-3 sm:py-2 border border-slate-200 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500" />
+             </div>
+          </div>
           
           <div class="pt-3 sm:pt-4 border-t border-slate-100 mt-4 sm:mt-6">
             <button type="submit" :disabled="isSaving" class="w-full py-2 sm:py-2.5 bg-teal-600 text-white font-bold text-sm rounded-md hover:bg-teal-700 transition-colors shadow-sm disabled:opacity-50">
@@ -76,7 +86,8 @@ const toastStore = useToastStore();
 const isSaving = ref(false);
 const form = ref({
     unit_id: '', plate_number: '', vehicle_type: 'Ambulance - Type 1', 
-    make_model: '', status: 'READY', odometer: 0, base_location: 'BRHMC Main Base'
+    make_model: '', status: 'READY', odometer: 0, base_location: 'BRHMC Main Base',
+    registration_expiry_date: '', insurance_expiry_date: ''
 });
 
 const submitVehicle = async () => {

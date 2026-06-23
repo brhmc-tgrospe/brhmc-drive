@@ -46,9 +46,9 @@ class ChecklistController extends Controller
 
             $query->orderBy($sortBy, $sortDir);
 
-            // 0. Driver Data Isolation
+            // 0. Driver Data Isolation — scope by role so drivers only see own data
             $user = $request->user();
-            if (!$user->hasPermission('checklist.view') && strtolower($user->role) !== 'developer') {
+            if (strtolower($user->role) === 'driver') {
                 $query->where('shifts.driver_id', $user->id);
             }
 
@@ -394,7 +394,7 @@ class ChecklistController extends Controller
             if (!$checklist) return response()->json(['message' => 'Checklist not found'], 404);
 
             $user = auth()->user();
-            if (!$user->hasPermission('checklist.view') && strtolower($user->role) !== 'developer') {
+            if (strtolower($user->role) === 'driver') {
                 if ((int)$checklist->driver_id !== (int)$user->id) {
                     return response()->json(['message' => 'Unauthorized access to checklist data.'], 403);
                 }

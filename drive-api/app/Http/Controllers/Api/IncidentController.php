@@ -40,9 +40,9 @@ class IncidentController extends Controller
 
             $query->orderBy($sortBy, $sortDir);
 
-            // 0. Driver Data Isolation
+            // 0. Driver Data Isolation — scope by role so drivers only see own data
             $user = $request->user();
-            if (!$user->hasPermission('incident.view') && strtolower($user->role) !== 'developer') {
+            if (strtolower($user->role) === 'driver') {
                 $query->where('incidents.reporter_id', $user->id);
             }
 

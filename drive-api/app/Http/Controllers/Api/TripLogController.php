@@ -29,9 +29,9 @@ class TripLogController extends Controller
                 )
                 ->whereNull('trips.deleted_at');
 
-            // 0. Driver Data Isolation
+            // 0. Driver Data Isolation — scope by role so drivers only see own data
             $user = $request->user();
-            if (!$user->hasPermission('trip.view') && strtolower($user->role) !== 'developer') {
+            if (strtolower($user->role) === 'driver') {
                 $query->where('shifts.driver_id', $user->id);
             }
 
@@ -101,7 +101,7 @@ class TripLogController extends Controller
             }
 
             $user = $request->user();
-            if (!$user->hasPermission('trip.view') && strtolower($user->role) !== 'developer') {
+            if (strtolower($user->role) === 'driver') {
                 if ((int)$trip->driver_id !== (int)$user->id) {
                     return response()->json(['message' => 'Unauthorized access to trip data.'], 403);
                 }

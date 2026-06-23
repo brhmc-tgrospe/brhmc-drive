@@ -49,6 +49,15 @@ class AuthController extends Controller
         if (is_string($perms)) $perms = json_decode($perms, true);
         if (!is_array($perms)) $perms = [];
 
+        // Auto-grant driver view permissions when execute_shifts is active
+        if (in_array('execute_shifts', $perms)) {
+            foreach (['checklist.view', 'trip.view', 'incident.view'] as $driverPerm) {
+                if (!in_array($driverPerm, $perms)) {
+                    $perms[] = $driverPerm;
+                }
+            }
+        }
+
         return response()->json([
             'token' => $token,
             'access_token' => $token,
@@ -135,6 +144,15 @@ class AuthController extends Controller
         $perms = $user->legacy_permissions;
         if (is_string($perms)) $perms = json_decode($perms, true);
         if (!is_array($perms)) $perms = [];
+
+        // Auto-grant driver view permissions when execute_shifts is active
+        if (in_array('execute_shifts', $perms)) {
+            foreach (['checklist.view', 'trip.view', 'incident.view'] as $driverPerm) {
+                if (!in_array($driverPerm, $perms)) {
+                    $perms[] = $driverPerm;
+                }
+            }
+        }
 
         return response()->json([
             'user' => [

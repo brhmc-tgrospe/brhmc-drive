@@ -450,15 +450,12 @@ const isChecklistValid = computed(() => {
     const hasDriverCond = props.type === 'Pre-Trip' ? inspectionForm.value.driver_condition !== '' : true;
     const hasFuelImg = inspectionForm.value.fuel_image !== ''; 
     
-    return hasOdo && hasCondition && hasDriverCond && hasFuelImg; // bypassed hasSignature.value
+    return hasOdo && hasCondition && hasDriverCond && hasFuelImg && hasSignature.value;
 });
 
 const handleSubmit = () => {
-    if (hasSignature.value && sigPad.value && sigPad.value.getSignatureData()) {
-        inspectionForm.value.signature = sigPad.value.getSignatureData();
-    } else {
-        inspectionForm.value.signature = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-    }
+    if (!hasSignature.value || !sigPad.value) return;
+    inspectionForm.value.signature = sigPad.value.getSignatureData();
     
     emit('submit', {
         ...inspectionForm.value,

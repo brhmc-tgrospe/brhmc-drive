@@ -55,6 +55,7 @@ const form = ref({
     email: isEdit.value ? props.user.email || '' : '',
     contact_number: isEdit.value ? props.user.contact_number || '' : '', 
     password: '', 
+    password_confirmation: '',
     role: isEdit.value ? props.user.role || '' : '',
     permissions: parsedPermissions
 });
@@ -65,12 +66,18 @@ const saveUser = async () => {
         return;
     }
 
+    if (form.value.password && form.value.password !== form.value.password_confirmation) {
+        toastStore.show('Passwords do not match.', 'error');
+        return;
+    }
+
     isSaving.value = true;
     try {
         const payload = { ...form.value };
         
         if (!payload.password || payload.password.trim() === '') {
             delete payload.password;
+            delete payload.password_confirmation;
         }
 
         if (isEdit.value) {

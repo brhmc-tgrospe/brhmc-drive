@@ -54,10 +54,13 @@ class VehicleShiftController extends Controller
                 'image_path' => $item->vehicle_image_path ?? null,
                 'status' => $item->vehicle_status ?? 'READY'
             ],
+            'trip_type' => $item->trip_type ?? 'EMERGENCY',
             'trip' => $item->trip_id ? [
                 'id' => $item->trip_id,
                 'current_phase' => (int) $item->trip_current_phase,
                 'is_cleared_by_dispatch' => (bool) $item->trip_is_cleared,
+                'type' => $item->trip_type_actual ?? ($item->trip_type ?? 'EMERGENCY'),
+                'current_destination' => $item->trip_current_destination ?? null,
             ] : null
         ];
     }
@@ -73,7 +76,7 @@ class VehicleShiftController extends Controller
                 })
                 ->select(
                     'shifts.id', 'shifts.driver_id', 'shifts.vehicle_id', 'shifts.status',
-                    'shifts.scheduled_start as start_time', 'shifts.scheduled_end as end_time',
+                    'shifts.scheduled_start as start_time', 'shifts.scheduled_end as end_time', 'shifts.trip_type',
                     'drivers.first_name as driver_first_name', 'drivers.last_name as driver_last_name',
                     'vehicles.unit_id as vehicle_unit', 'vehicles.plate_number as vehicle_plate', 
                     
@@ -82,7 +85,8 @@ class VehicleShiftController extends Controller
                     'vehicles.tire_psi_rear_left as vehicle_tire_psi_rear_left', 'vehicles.tire_psi_rear_right as vehicle_tire_psi_rear_right',
                     
                     'vehicles.image_path as vehicle_image_path', 'vehicles.status as vehicle_status',
-                    'trips.id as trip_id', 'trips.current_phase as trip_current_phase', 'trips.is_cleared_by_dispatch as trip_is_cleared'
+                    'trips.id as trip_id', 'trips.current_phase as trip_current_phase', 'trips.is_cleared_by_dispatch as trip_is_cleared',
+                    'trips.type as trip_type_actual', 'trips.current_destination as trip_current_destination'
                 )
                 ->orderBy('shifts.scheduled_start', 'desc');
 
@@ -133,7 +137,7 @@ class VehicleShiftController extends Controller
                 })
                 ->select(
                     'shifts.id', 'shifts.driver_id', 'shifts.vehicle_id', 'shifts.status',
-                    'shifts.scheduled_start as start_time', 'shifts.scheduled_end as end_time',
+                    'shifts.scheduled_start as start_time', 'shifts.scheduled_end as end_time', 'shifts.trip_type',
                     'drivers.first_name as driver_first_name', 'drivers.last_name as driver_last_name',
                     'vehicles.unit_id as vehicle_unit', 'vehicles.plate_number as vehicle_plate', 
                     
@@ -142,7 +146,8 @@ class VehicleShiftController extends Controller
                     'vehicles.tire_psi_rear_left as vehicle_tire_psi_rear_left', 'vehicles.tire_psi_rear_right as vehicle_tire_psi_rear_right',
                     
                     'vehicles.image_path as vehicle_image_path', 'vehicles.status as vehicle_status',
-                    'trips.id as trip_id', 'trips.current_phase as trip_current_phase', 'trips.is_cleared_by_dispatch as trip_is_cleared'
+                    'trips.id as trip_id', 'trips.current_phase as trip_current_phase', 'trips.is_cleared_by_dispatch as trip_is_cleared',
+                    'trips.type as trip_type_actual', 'trips.current_destination as trip_current_destination'
                 )
                 ->where('shifts.driver_id', $request->user()->id)
                 ->whereIn('shifts.status', ['PENDING', 'ACTIVE']) 
@@ -205,6 +210,7 @@ class VehicleShiftController extends Controller
                 'vehicle_id' => 'required|exists:vehicles,id',
                 'start_time' => 'required|date',
                 'shift_duration' => 'required|integer',
+                'trip_type' => 'nullable|in:EMERGENCY,REGULAR',
             ]);
 
             $startTime = Carbon::parse($validated['start_time']);
@@ -240,7 +246,8 @@ class VehicleShiftController extends Controller
                 'vehicle_id' => $validated['vehicle_id'],
                 'scheduled_start' => $startTimeStr,
                 'scheduled_end' => $endTimeStr,
-                'status' => 'PENDING'
+                'status' => 'PENDING',
+                'trip_type' => $validated['trip_type'] ?? 'EMERGENCY',
             ]);
             $shiftId = $newShift->id;
 
@@ -333,6 +340,7 @@ public function update(Request $request, $id)
                 'start_time' => 'required|date',
                 'end_time' => 'required|date',
                 'shift_duration' => 'required|integer', 
+                'trip_type' => 'nullable|in:EMERGENCY,REGULAR',
             ]);
             
             $startTimeStr = Carbon::parse($validated['start_time'])->toDateTimeString();
@@ -380,7 +388,8 @@ public function update(Request $request, $id)
                 'driver_id' => $validated['driver_id'],
                 'vehicle_id' => $validated['vehicle_id'],
                 'scheduled_start' => $startTimeStr,
-                'scheduled_end' => $endTimeStr
+                'scheduled_end' => $endTimeStr,
+                'trip_type' => $validated['trip_type'] ?? $shift->trip_type ?? 'EMERGENCY',
             ]);
 
             DB::commit();

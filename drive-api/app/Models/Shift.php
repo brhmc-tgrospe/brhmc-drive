@@ -15,7 +15,8 @@ class Shift extends Model
         'vehicle_id',
         'scheduled_start',
         'scheduled_end',
-        'status'
+        'status',
+        'trip_type'
     ];
 
     public function getActivitylogOptions(): LogOptions

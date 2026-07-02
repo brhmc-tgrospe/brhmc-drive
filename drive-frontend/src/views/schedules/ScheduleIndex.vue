@@ -125,16 +125,17 @@
                 </div>
               </th>
 
+              <th class="py-2 px-3 sm:py-3 sm:px-4 font-bold whitespace-nowrap">Trip Type</th>
               <th class="py-2 px-3 sm:py-3 sm:px-4 font-bold text-right whitespace-nowrap">Actions</th>
             </tr>
           </thead>
-          <TableSkeleton v-if="isLoading" :columns="7" :rows="5" />
+          <TableSkeleton v-if="isLoading" :columns="8" :rows="5" />
           <tbody v-else class="divide-y divide-slate-100">
             <tr v-if="shiftStore.loading">
-              <td colspan="6" class="py-12 text-center text-slate-400 font-bold text-xs sm:text-sm animate-pulse">Loading schedules...</td>
+              <td colspan="8" class="py-12 text-center text-slate-400 font-bold text-xs sm:text-sm animate-pulse">Loading schedules...</td>
             </tr>
             <tr v-else-if="!shiftStore.shifts?.length">
-              <td colspan="7" class="py-8 text-center text-slate-500 font-medium whitespace-nowrap text-xs sm:text-sm">No upcoming shifts scheduled.</td>
+              <td colspan="8" class="py-8 text-center text-slate-500 font-medium whitespace-nowrap text-xs sm:text-sm">No upcoming shifts scheduled.</td>
             </tr>
             <tr v-else v-for="shift in shiftStore.shifts" :key="shift.id" class="hover:bg-slate-50 transition-colors" :class="{'bg-teal-50/30': selectedItems.includes(shift.id)}">
               <td v-if="hasPermission('schedule.delete')" class="py-2 px-3 sm:py-3 sm:px-4">
@@ -167,6 +168,12 @@
                           'bg-teal-50 text-teal-700 border border-teal-200': shift.status === 'COMPLETED'
                       }">
                   {{ shift.status }}
+                </span>
+              </td>
+              <td class="py-2 px-3 sm:py-3 sm:px-4">
+                <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[10px] font-bold rounded-full uppercase tracking-wider"
+                      :class="shift.trip_type === 'REGULAR' ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-red-50 text-red-700 border border-red-200'">
+                  {{ shift.trip_type === 'REGULAR' ? 'Regular' : 'Emergency' }}
                 </span>
               </td>
               <td class="py-2 px-3 sm:py-3 sm:px-4 text-right space-x-1 sm:space-x-2 whitespace-nowrap">

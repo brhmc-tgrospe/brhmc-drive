@@ -184,8 +184,10 @@ class ChecklistController extends Controller
                 }
             } elseif (!$tripId && $typeEnum === 'PRE_TRIP') {
                 if (!empty($validated['shift_id'])) {
+                    $parentShift = DB::table('shifts')->where('id', $validated['shift_id'])->first();
                     $trip = \App\Models\Trip::create([
                         'shift_id' => $validated['shift_id'],
+                        'type' => $parentShift->trip_type ?? 'EMERGENCY',
                         'current_phase' => 0,
                         'is_cleared_by_dispatch' => 0,
                     ]);

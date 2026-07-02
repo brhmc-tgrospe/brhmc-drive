@@ -47,8 +47,8 @@ const vehicleTrails = shallowRef({});
 const phaseMarkers = shallowRef({}); 
 const incidentMarkers = shallowRef({}); 
 
-const BASE_LAT = 13.1470067; 
-const BASE_LNG = 123.7221295;
+const BASE_LAT = 13.146820; 
+const BASE_LNG = 123.724505;
 
 onMounted(() => {
   if (!mapContainer.value) return;
@@ -145,11 +145,11 @@ const addLandmarks = () => {
 
     const brhmcHtml = `
       <div class="relative flex items-center justify-center opacity-90 hover:opacity-100 transition-opacity cursor-help">
-         <svg class="w-8 h-8 text-slate-800 drop-shadow-md" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg>
+         <svg class="w-8 h-8 text-green-600 drop-shadow-md" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/></svg>
          <div class="absolute top-[6px] text-white"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg></div>
-         <span class="absolute left-8 bg-white/90 backdrop-blur-sm border border-slate-200 px-2 py-0.5 rounded shadow-sm text-[10px] font-bold text-slate-700 whitespace-nowrap z-50">BRHMC Base</span>
+         <span class="absolute left-8 bg-green-50 backdrop-blur-sm border border-green-200 px-2 py-0.5 rounded shadow-sm text-[10px] font-bold text-green-700 whitespace-nowrap z-50">BRHMC</span>
       </div>`;
-    L.marker([BASE_LAT, BASE_LNG], { icon: L.divIcon({ html: brhmcHtml, className: '', iconSize: [32, 32], iconAnchor: [16, 30] }) }).addTo(map.value);
+    L.marker([13.146820, 123.724505], { icon: L.divIcon({ html: brhmcHtml, className: '', iconSize: [32, 32], iconAnchor: [16, 30] }) }).addTo(map.value);
 };
 
 // ==========================================

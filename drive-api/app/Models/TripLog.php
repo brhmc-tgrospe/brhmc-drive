@@ -16,6 +16,8 @@ class TripLog extends Model
     protected $fillable = [
         'trip_id',
         'phase',
+        'action_label',
+        'destination',
         'latitude',
         'longitude',
     ];

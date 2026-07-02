@@ -22,8 +22,46 @@ export function useTripData(props, onTripClosed = () => {}) {
         }
     });
 
-    const getPhaseName = (phase) => {
-        const titles = { 
+    const getPhaseName = (logOrPhase) => {
+        const tripType = tripDetails.value?.type || 'EMERGENCY';
+        
+        let phase = logOrPhase;
+        let actionLabel = null;
+        let destination = null;
+
+        if (typeof logOrPhase === 'object' && logOrPhase !== null) {
+            phase = logOrPhase.phase;
+            actionLabel = logOrPhase.action_label;
+            destination = logOrPhase.destination;
+        }
+
+        if (tripType === 'REGULAR') {
+            if (actionLabel === 'dispatch_from_base') {
+                return destination ? `Dispatched to ${destination}` : 'Dispatched from Base';
+            }
+            if (actionLabel === 'next_destination') {
+                return destination ? `Proceeding to ${destination}` : 'Proceeding to Next Destination';
+            }
+            if (actionLabel === 'arrive_destination') {
+                return destination ? `Arrived at ${destination}` : 'Arrived at Destination';
+            }
+            if (actionLabel === 'return_base') {
+                return 'Returning to Base';
+            }
+            if (actionLabel === 'arrive_base') {
+                return 'Arrived at Base';
+            }
+            
+            // Fallback for regular
+            if (phase === 1) return "Pre-Trip Verified";
+            if (phase === 3) return destination ? `En route to ${destination}` : "En route to Destination";
+            if (phase === 4) return destination ? `Arrived at ${destination}` : "Arrived at Destination";
+            if (phase === 5) return "Returning to Base";
+            if (phase === 6) return "Arrived at Base";
+            if (phase === 7 || phase === 8) return "Post-Trip Submitted";
+        }
+
+        const emergencyTitles = { 
             1: "Pre-Trip Verified", 
             2: "Dispatched from Base", 
             3: "Arrived at Scene", 
@@ -33,7 +71,7 @@ export function useTripData(props, onTripClosed = () => {}) {
             7: "Arrived at Base", 
             8: "Post-Trip Submitted" 
         };
-        return titles[phase] || `Phase ${phase}`;
+        return emergencyTitles[phase] || `Phase ${phase}`;
     };
 
     const tripDuration = computed(() => {

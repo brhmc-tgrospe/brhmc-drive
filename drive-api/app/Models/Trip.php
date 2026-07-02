@@ -13,7 +13,7 @@ class Trip extends Model
     use SoftDeletes;
     use LogsActivity;
 
-    protected $fillable = ['shift_id', 'current_phase', 'is_cleared_by_dispatch', 'started_at', 'ended_at'];
+    protected $fillable = ['shift_id', 'type', 'current_phase', 'current_destination', 'is_cleared_by_dispatch', 'started_at', 'ended_at'];
 
     public function getActivitylogOptions(): LogOptions
     {

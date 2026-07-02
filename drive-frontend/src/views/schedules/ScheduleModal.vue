@@ -52,7 +52,7 @@ const toastStore = useToastStore();
 
 const isSaving = ref(false);
 const isEdit = computed(() => !!props.shift);
-const form = ref({ driver_id: '', vehicle_id: '', start_time: '', shift_duration: 8 });
+const form = ref({ driver_id: '', vehicle_id: '', start_time: '', shift_duration: 8, trip_type: 'EMERGENCY' });
 
 onMounted(() => {
     if (isEdit.value) {
@@ -73,7 +73,8 @@ onMounted(() => {
             driver_id: props.shift.driver_id, 
             vehicle_id: props.shift.vehicle_id, 
             start_time: localDateTime, 
-            shift_duration: initialDuration || 8 
+            shift_duration: initialDuration || 8,
+            trip_type: props.shift.trip_type || 'EMERGENCY'
         };
     }
 });
@@ -94,7 +95,8 @@ const submitShift = async () => {
                 vehicle_id: form.value.vehicle_id,
                 start_time: formattedStart,
                 end_time: formattedEnd, 
-                shift_duration: form.value.shift_duration
+                shift_duration: form.value.shift_duration,
+                trip_type: form.value.trip_type,
             };
 
             await shiftStore.updateShift(props.shift.id, payload);

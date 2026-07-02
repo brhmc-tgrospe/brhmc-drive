@@ -8,7 +8,7 @@
           <span v-if="!isTripActive" class="uppercase text-indigo-500">Assigned Dispatch Console</span>
           <span v-else class="uppercase text-teal-600 flex items-center justify-center sm:justify-start gap-1.5">
              <span class="flex h-2 w-2 relative"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span></span>
-             Active Trip Execution
+             Active {{ tripType === 'REGULAR' ? 'Regular' : 'Emergency' }} Trip
           </span>
         </p>
       </div>
@@ -22,7 +22,6 @@
 
     <!-- ========================================================== -->
     <!-- CRITICAL FIX: EMERGENCY LOCKDOWN OVERLAY -->
-    <!-- Uses both local optimistic state AND database state to guarantee lockdown! -->
     <!-- ========================================================== -->
     <div v-if="localShift?.active_emergency || hardEmergencyLock" class="absolute inset-0 z-20 bg-slate-900/90 backdrop-blur-md rounded-3xl flex flex-col items-center justify-center p-6 text-center animate-fade-in-up border border-slate-700 shadow-2xl">
       <div class="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mb-6 animate-pulse border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.5)]">
@@ -81,6 +80,10 @@
               <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Vehicle Assigned</h3>
               <div class="text-3xl font-black text-slate-800 tracking-tighter drop-shadow-sm">{{ localShift?.vehicle?.unit_id || 'UNKNOWN' }}</div>
               <p class="text-xs font-bold text-teal-600 uppercase tracking-widest mt-0.5">{{ localShift?.vehicle?.plate_number || 'N/A' }} • {{ localShift?.vehicle?.vehicle_type || 'Vehicle' }}</p>
+              <!-- Trip Type Badge -->
+              <span class="inline-block mt-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest" :class="tripType === 'REGULAR' ? 'bg-teal-100 text-teal-700 border border-teal-200' : 'bg-red-100 text-red-700 border border-red-200'">
+                {{ tripType === 'REGULAR' ? 'Regular Trip' : 'Emergency Response' }}
+              </span>
            </div>
         </div>
 
@@ -111,7 +114,7 @@
     <div v-if="isTripActive && !isReloading" class="w-full flex flex-col gap-4 sm:gap-6 flex-1 animate-fade-in-up">
       
       <!-- Top Status Card -->
-      <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 sm:p-8 shadow-2xl text-white border-b-4 border-teal-500 relative overflow-hidden shrink-0">
+      <div class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-6 sm:p-8 shadow-2xl text-white border-b-4 relative overflow-hidden shrink-0" :class="tripType === 'REGULAR' ? 'border-teal-500' : 'border-red-500'">
          <div class="absolute -right-20 -top-20 w-64 h-64 bg-gradient-to-br from-teal-500/20 to-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
          <div class="absolute left-0 bottom-0 w-full h-1/2 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none"></div>
          
@@ -120,8 +123,14 @@
                <div class="flex items-center gap-3 mb-2">
                  <p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">Active Unit</p>
                  <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-white/10 text-white border border-white/20 uppercase tracking-widest backdrop-blur-sm shadow-sm">{{ localShift?.vehicle?.plate_number }}</span>
+                 <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest backdrop-blur-sm shadow-sm" :class="tripType === 'REGULAR' ? 'bg-teal-500/20 text-teal-300 border border-teal-400/30' : 'bg-red-500/20 text-red-300 border border-red-400/30'">{{ tripType === 'REGULAR' ? 'Regular' : 'Emergency' }}</span>
                </div>
                <h2 class="text-4xl sm:text-5xl font-black tracking-tighter drop-shadow-md bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300">{{ localShift?.vehicle?.unit_id }}</h2>
+               <!-- Show destination for Regular Trips -->
+               <p v-if="tripType === 'REGULAR' && currentDestination" class="text-teal-400 text-xs font-bold mt-2 flex items-center gap-1.5">
+                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                 {{ currentDestination }}
+               </p>
             </div>
             
             <div class="flex flex-col items-end gap-2 w-full sm:w-auto">
@@ -161,10 +170,15 @@
               <span class="text-teal-600 font-black text-[10px] sm:text-xs tracking-[0.2em] uppercase">Live Execution Tracker</span>
             </div>
             <h2 class="text-3xl sm:text-4xl font-black tracking-tight uppercase drop-shadow-sm" :class="currentPhaseData.textColor">{{ currentPhaseData.title }}</h2>
+            <!-- Destination context for Regular Trips -->
+            <p v-if="tripType === 'REGULAR' && currentDestination && (currentPhaseIndex === 3 || currentPhaseIndex === 4)" class="mt-2 text-sm font-bold text-slate-500">
+              <span class="text-slate-400">→</span> {{ currentDestination }}
+            </p>
         </div>
 
         <div class="p-5 sm:p-8 bg-slate-50/50 rounded-3xl flex flex-col items-center relative z-10 border border-slate-100 shadow-inner">
           <div class="w-full text-center">
+              <!-- Awaiting Clearance (Both trip types - Phase 1) -->
               <button v-if="currentPhaseIndex === 1 && !isDispatcherCleared" disabled class="w-full max-w-xl mx-auto py-5 sm:py-6 rounded-2xl font-black text-lg sm:text-xl uppercase tracking-wider transition-all duration-300 shadow-xl flex items-center justify-center cursor-not-allowed bg-slate-800 text-slate-500 border border-slate-700">
                  <span class="flex items-center gap-3">
                      <svg class="animate-spin h-6 w-6 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -172,13 +186,28 @@
                  </span>
               </button>
               
-              <button v-else-if="currentPhaseIndex === 7 && isPostTripInspectionCompleted" disabled class="w-full max-w-xl mx-auto py-5 sm:py-6 rounded-2xl font-black text-lg sm:text-xl uppercase tracking-wider transition-all duration-300 shadow-xl flex items-center justify-center cursor-not-allowed bg-slate-800 text-slate-500 border border-slate-700 px-4">
+              <!-- Post-Trip awaiting final approval (Emergency Phase 7, Regular Phase 6) -->
+              <button v-else-if="isPostTripPhase && isPostTripInspectionCompleted" disabled class="w-full max-w-xl mx-auto py-5 sm:py-6 rounded-2xl font-black text-lg sm:text-xl uppercase tracking-wider transition-all duration-300 shadow-xl flex items-center justify-center cursor-not-allowed bg-slate-800 text-slate-500 border border-slate-700 px-4">
                  <span class="flex items-center gap-3 w-full justify-center">
                      <svg class="animate-spin h-6 w-6 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                      <span class="truncate">Awaiting Final Dispatcher Approval...</span>
                  </span>
               </button>
+
+              <!-- Regular Trip: Arrived at destination — show TWO buttons -->
+              <div v-else-if="tripType === 'REGULAR' && currentPhaseIndex === 4" class="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto">
+                <button @click="handleRegularAction('next_destination')" :disabled="isAdvancingPhase" class="flex-1 py-5 sm:py-6 rounded-2xl font-black text-base sm:text-lg uppercase tracking-wider transition-all duration-300 transform active:scale-95 shadow-xl flex items-center justify-center gap-2 bg-teal-600 text-white hover:bg-teal-700 hover:-translate-y-1 shadow-teal-500/30 disabled:opacity-75 disabled:cursor-not-allowed">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                  Next Destination
+                </button>
+                <button @click="handleRegularAction('return_base')" :disabled="isAdvancingPhase" class="flex-1 py-5 sm:py-6 rounded-2xl font-black text-base sm:text-lg uppercase tracking-wider transition-all duration-300 transform active:scale-95 shadow-xl flex items-center justify-center gap-2 bg-orange-600 text-white hover:bg-orange-700 hover:-translate-y-1 shadow-orange-500/30 disabled:opacity-75 disabled:cursor-not-allowed">
+                  <svg v-if="isAdvancingPhase && activeActionType === 'return_base'" class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                  {{ (isAdvancingPhase && activeActionType === 'return_base') ? 'Returning...' : 'Return to Base' }}
+                </button>
+              </div>
               
+              <!-- Default single action button -->
               <button v-else @click="advancePhase" :disabled="isAdvancingPhase" class="w-full max-w-xl mx-auto py-5 sm:py-6 rounded-2xl font-black text-lg sm:text-xl uppercase tracking-wider transition-all duration-300 transform active:scale-95 shadow-xl flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed" :class="currentPhaseData.buttonClass">
                  <span class="flex items-center gap-3">
                      <svg v-if="isAdvancingPhase" class="animate-spin h-6 w-6 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -209,22 +238,6 @@
                <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Up Next</span>
                <h4 class="text-sm font-black text-slate-600 uppercase tracking-wide truncate max-w-[150px]">{{ currentPhaseData.buttonText }}</h4>
              </div>
-             
-             <div class="shrink-0 flex items-center">
-                <button v-if="currentPhaseIndex === 1 && !isDispatcherCleared" disabled class="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-400 text-[10px] font-bold uppercase rounded-lg flex items-center gap-2 cursor-not-allowed">
-                   <svg class="animate-spin h-3 w-3 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                   <span class="hidden lg:inline">Awaiting</span>
-                </button>
-                <button v-else-if="currentPhaseIndex === 7 && isPostTripInspectionCompleted" disabled class="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-400 text-[10px] font-bold uppercase rounded-lg flex items-center gap-2 cursor-not-allowed">
-                   <svg class="animate-spin h-3 w-3 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                   <span class="hidden lg:inline">Awaiting</span>
-                </button>
-                
-                <button v-else @click="advancePhase" :disabled="isAdvancingPhase" class="px-4 py-2 text-xs font-bold uppercase rounded-lg transition-colors shadow-sm whitespace-nowrap disabled:opacity-75 disabled:cursor-not-allowed" :class="currentPhaseData.buttonClass">
-                   <span v-if="isAdvancingPhase">Loading...</span>
-                   <span v-else>{{ currentPhaseData.buttonText }}</span>
-                </button>
-             </div>
           </div>
         </div>
       </div>
@@ -247,6 +260,15 @@
       :vehicleUnit="localShift?.vehicle?.unit_id"
       :isDispatcher="false" 
     />
+
+    <DestinationModal
+      :show="showDestinationModal"
+      :loading="isDestinationLoading"
+      :title="destinationModalTitle"
+      :subtitle="destinationModalSubtitle"
+      @close="showDestinationModal = false"
+      @confirm="handleDestinationConfirm"
+    />
   </div>
 </template>
 
@@ -254,6 +276,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import ChecklistIssue from '../../views/checklists/ChecklistIssue.vue';
 import DriverChecklistModal from '../modals/DriverChecklistModal.vue';
+import DestinationModal from '../modals/DestinationModal.vue';
 import { useToastStore } from '../../stores/toast';
 import api from '../../axios'; 
 
@@ -284,8 +307,11 @@ const isDispatcherCleared = ref(false);
 const isShiftComplete = ref(false);
 const isPostTripInspectionCompleted = ref(false);
 const isReloading = ref(false); 
+const tripType = ref('EMERGENCY');
+const currentDestination = ref(null);
 
 const isAdvancingPhase = ref(false);
+const activeActionType = ref(null);
 const isSubmittingChecklist = ref(false);
 let checklistAbortController = null;
 
@@ -297,6 +323,19 @@ let telemetryPingInterval = null;
 
 const showChecklistModal = ref(false);
 const checklistType = ref('Pre-Trip');
+
+// Destination Modal state
+const showDestinationModal = ref(false);
+const destinationModalTitle = ref('Enter Destination');
+const destinationModalSubtitle = ref('Where is the vehicle heading?');
+let pendingDestinationAction = null;
+const isDestinationLoading = ref(false);
+
+// Computed: is current phase the post-trip phase?
+const isPostTripPhase = computed(() => {
+    if (tripType.value === 'REGULAR') return currentPhaseIndex.value === 6;
+    return currentPhaseIndex.value === 7;
+});
 
 const phases = ref([
     { title: 'Time of Call', status: 'pending', timestamp: null, buttonClass: 'bg-teal-600 text-white', textColor: 'text-teal-400' },
@@ -310,6 +349,29 @@ const phases = ref([
 ]);
 
 const currentPhaseData = computed(() => {
+    // ============================================
+    // REGULAR TRIP PHASES
+    // ============================================
+    if (tripType.value === 'REGULAR') {
+        switch (currentPhaseIndex.value) {
+            case 0: return { title: 'PRE-TRIP INSPECTION', buttonText: 'Start Inspection', buttonClass: 'bg-teal-600 text-white hover:bg-teal-700 hover:-translate-y-1', textColor: 'text-teal-400' };
+            case 1:
+                if (!isDispatcherCleared.value) return { title: 'AWAITING APPROVAL', buttonText: 'Awaiting Clearance...', buttonClass: 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700', textColor: 'text-orange-400' };
+                return { title: 'CLEARED FOR DEPARTURE', buttonText: 'Log Dispatch from Base', buttonClass: 'bg-indigo-600 text-white hover:bg-indigo-700 hover:-translate-y-1 shadow-lg shadow-indigo-500/30', textColor: 'text-indigo-400' };
+            case 2: return { title: 'DISPATCH FROM BASE', buttonText: 'Set Destination & Dispatch', buttonClass: 'bg-purple-600 text-white hover:bg-purple-700 hover:-translate-y-1 shadow-lg shadow-purple-500/30', textColor: 'text-purple-400' };
+            case 3: return { title: 'EN ROUTE', buttonText: `Arrived at ${currentDestination.value || 'Destination'}`, buttonClass: 'bg-pink-600 text-white hover:bg-pink-700 hover:-translate-y-1 shadow-lg shadow-pink-500/30', textColor: 'text-pink-400' };
+            case 4: return { title: `ARRIVED AT ${(currentDestination.value || 'DESTINATION').toUpperCase()}`, buttonText: 'Choose Action', buttonClass: 'bg-rose-600 text-white', textColor: 'text-rose-400' };
+            case 5: return { title: 'RETURNING TO BASE', buttonText: 'Log Arrival at Base', buttonClass: 'bg-orange-600 text-white hover:bg-orange-700 hover:-translate-y-1 shadow-lg shadow-orange-500/30', textColor: 'text-orange-400' };
+            case 6:
+                if (!isPostTripInspectionCompleted.value) return { title: 'ARRIVED AT BASE', buttonText: 'Start Post-Trip Inspection', buttonClass: 'bg-emerald-600 text-white hover:bg-emerald-700 hover:-translate-y-1 shadow-lg shadow-emerald-500/30', textColor: 'text-emerald-500' };
+                return { title: 'FINAL TURNOVER PENDING', buttonText: 'Awaiting Final Clearance...', buttonClass: 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700', textColor: 'text-orange-400' };
+            default: return { title: 'COMPLETED', buttonText: '', buttonClass: '', textColor: 'text-slate-400' };
+        }
+    }
+
+    // ============================================
+    // EMERGENCY TRIP PHASES (original)
+    // ============================================
     switch (currentPhaseIndex.value) {
         case 0: return { title: 'TIME OF CALL (PRE-TRIP)', buttonText: 'Start Inspection', buttonClass: 'bg-teal-600 text-white hover:bg-teal-700 hover:-translate-y-1', textColor: 'text-teal-400' };
         case 1:
@@ -398,17 +460,131 @@ const getFreshCoordinates = () => {
     });
 };
 
+// ============================================
+// REGULAR TRIP ACTION HANDLER
+// ============================================
+const handleRegularAction = (action) => {
+    if (action === 'next_destination') {
+        pendingDestinationAction = 'next_destination';
+        destinationModalTitle.value = 'Next Destination';
+        destinationModalSubtitle.value = 'Where are you heading next?';
+        showDestinationModal.value = true;
+        return;
+    }
+
+    if (action === 'return_base') {
+        executeRegularAction('return_base', null);
+    }
+};
+
+const handleDestinationConfirm = async (destination) => {
+    isDestinationLoading.value = true;
+    try {
+        await executeRegularAction(pendingDestinationAction, destination);
+    } finally {
+        isDestinationLoading.value = false;
+        showDestinationModal.value = false;
+        pendingDestinationAction = null;
+    }
+};
+
+const executeRegularAction = async (action, destination) => {
+    if (isAdvancingPhase.value) return;
+    isAdvancingPhase.value = true;
+    activeActionType.value = action;
+
+    try {
+        const coords = await getFreshCoordinates();
+        currentLat.value = coords.lat;
+        currentLng.value = coords.lng;
+
+        const payload = {
+            latitude: currentLat.value,
+            longitude: currentLng.value,
+            action: action,
+        };
+        if (destination) payload.destination = destination;
+
+        const res = await api.post(`/api/trips/${localShift.value.trip.id}/advance`, payload);
+        
+        if (res.data.current_destination !== undefined) {
+            currentDestination.value = res.data.current_destination;
+        }
+
+        await fetchAndSyncCurrentShift();
+    } catch (e) {
+        toastStore.show(e.response?.data?.message || 'Failed to advance trip.', 'error');
+    } finally {
+        isAdvancingPhase.value = false;
+        activeActionType.value = null;
+    }
+};
+
 const advancePhase = async () => {
     if (isAdvancingPhase.value) return; 
     
+    // Phase 0: Pre-Trip checklist (both trip types)
     if (currentPhaseIndex.value === 0) {
         checklistType.value = 'Pre-Trip';
         showChecklistModal.value = true;
         return;
     }
     
+    // Phase 1: Awaiting clearance (both trip types)
     if (currentPhaseIndex.value === 1 && !isDispatcherCleared.value) return; 
 
+    // ============================================
+    // REGULAR TRIP specific phase handling
+    // ============================================
+    if (tripType.value === 'REGULAR') {
+        // Phase 1 (cleared): "Log Dispatch from Base" -> open destination modal directly
+        if (currentPhaseIndex.value === 1 && isDispatcherCleared.value) {
+            pendingDestinationAction = 'dispatch_from_base';
+            destinationModalTitle.value = 'Log Dispatch from Base';
+            destinationModalSubtitle.value = 'Enter the destination for this trip.';
+            showDestinationModal.value = true;
+            return;
+        }
+
+        // Phase 2: Dispatch from Base -> open destination modal (fallback if somehow at Phase 2)
+        if (currentPhaseIndex.value === 2) {
+            pendingDestinationAction = 'dispatch_from_base';
+            destinationModalTitle.value = 'Enter Destination';
+            destinationModalSubtitle.value = 'Where is the vehicle heading?';
+            showDestinationModal.value = true;
+            return;
+        }
+
+        // Phase 3: Arrive at destination
+        if (currentPhaseIndex.value === 3) {
+            executeRegularAction('arrive_destination', null);
+            return;
+        }
+
+        // Phase 4: Handled by split buttons (next_destination / return_base)
+        if (currentPhaseIndex.value === 4) return;
+
+        // Phase 5: Arrive at base
+        if (currentPhaseIndex.value === 5) {
+            executeRegularAction('arrive_base', null);
+            return;
+        }
+
+        // Phase 6: Post-Trip inspection
+        if (currentPhaseIndex.value === 6) {
+            if (!isPostTripInspectionCompleted.value) {
+                checklistType.value = 'Post-Trip';
+                showChecklistModal.value = true;
+            }
+            return;
+        }
+
+        return;
+    }
+
+    // ============================================
+    // EMERGENCY TRIP phase handling (original)
+    // ============================================
     if (currentPhaseIndex.value === 7) {
         if (!isPostTripInspectionCompleted.value) {
             checklistType.value = 'Post-Trip';
@@ -443,6 +619,8 @@ const syncPhaseState = (shiftObj) => {
         isTripActive.value = true;
         currentPhaseIndex.value = shiftObj.trip.current_phase;
         isDispatcherCleared.value = !!shiftObj.trip.is_cleared_by_dispatch;
+        tripType.value = shiftObj.trip.type || shiftObj.trip_type || 'EMERGENCY';
+        currentDestination.value = shiftObj.trip.current_destination || null;
 
         phases.value.forEach(p => { p.status = 'pending'; p.timestamp = null; });
         for(let i=0; i < currentPhaseIndex.value; i++) {
@@ -452,12 +630,16 @@ const syncPhaseState = (shiftObj) => {
             phases.value[currentPhaseIndex.value].status = 'active';
         }
 
-        if (currentPhaseIndex.value === 7 && localStorage.getItem(`post_trip_${shiftObj.id}`)) {
+        // Post-trip completion check
+        const postTripPhase = tripType.value === 'REGULAR' ? 6 : 7;
+        if (currentPhaseIndex.value === postTripPhase && localStorage.getItem(`post_trip_${shiftObj.id}`)) {
             isPostTripInspectionCompleted.value = true;
         }
     } else {
         isTripActive.value = false;
         currentPhaseIndex.value = 0;
+        tripType.value = shiftObj.trip_type || 'EMERGENCY';
+        currentDestination.value = null;
         phases.value.forEach(p => { p.status = 'pending'; p.timestamp = null; });
         phases.value[0].status = 'active';
     }
@@ -473,6 +655,8 @@ watch(() => props.shift, (newShift) => {
         isShiftComplete.value = false;
         isDispatcherCleared.value = false;
         isPostTripInspectionCompleted.value = false;
+        tripType.value = 'EMERGENCY';
+        currentDestination.value = null;
         phases.value.forEach(p => { p.status = 'pending'; p.timestamp = null; });
     }
 }, { immediate: true });
@@ -594,6 +778,8 @@ const finalizeShift = () => {
     isPostTripInspectionCompleted.value = false;
     isShiftComplete.value = false;
     currentPhaseIndex.value = 0;
+    tripType.value = 'EMERGENCY';
+    currentDestination.value = null;
     phases.value.forEach(p => { p.status = 'pending'; p.timestamp = null; });
     
     localShift.value = null; 

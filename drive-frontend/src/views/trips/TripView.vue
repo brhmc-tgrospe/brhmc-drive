@@ -63,11 +63,11 @@
                         <td colspan="3" class="p-4 text-center text-slate-400 italic">No GPS coordinates recorded yet.</td>
                     </tr>
                     <tr v-for="log in tripDetails.logs" :key="log.id" class="hover:bg-slate-50">
-                        <td class="p-2.5 font-bold text-slate-700">{{ getPhaseName(log.phase) }}</td>
+                        <td class="p-2.5 font-bold text-slate-700">{{ getPhaseName(log) }}</td>
                         <td class="p-2.5 text-slate-600">{{ formatTimeOnly(log.created_at) }}</td>
                         <td class="p-2.5">
                             <button v-if="log.latitude && log.longitude" 
-                               @click="openMapModal([{ lat: log.latitude, lng: log.longitude, title: getPhaseName(log.phase), isIncident: false, phase: log.phase, time: formatTimeOnly(log.created_at) }], getPhaseName(log.phase))" 
+                               @click="openMapModal([{ lat: log.latitude, lng: log.longitude, title: getPhaseName(log), isIncident: false, phase: log.phase, time: formatTimeOnly(log.created_at) }], getPhaseName(log))" 
                                class="text-blue-600 hover:text-blue-800 font-mono font-medium underline decoration-blue-300 underline-offset-2 flex items-center gap-1.5 transition-colors">
                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                {{ log.latitude }}, {{ log.longitude }}
@@ -174,7 +174,7 @@ const viewAllPins = () => {
                 markers.push({ 
                     lat: log.latitude, 
                     lng: log.longitude, 
-                    title: getPhaseName(log.phase), 
+                    title: getPhaseName(log), 
                     isIncident: false, 
                     phase: log.phase,
                     time: formatTimeOnly(log.created_at)

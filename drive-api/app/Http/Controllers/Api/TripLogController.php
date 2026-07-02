@@ -56,7 +56,7 @@ class TripLogController extends Controller
 
             // 3. Sorting
             $sortBy = $request->input('sort_by', 'trips.id');
-            $sortDir = $request->input('sort_dir', 'desc');
+            $sortDir = $request->input('sort_dir', 'asc');
             $query->orderBy($sortBy, $sortDir);
 
             // 4. Pagination (Supports 10, 25, 50, 100)
@@ -83,6 +83,7 @@ class TripLogController extends Controller
                 ->join('users as drivers', 'shifts.driver_id', '=', 'drivers.id')
                 ->select(
                     'trips.id',
+                    'trips.type',
                     'trips.current_phase',
                     'trips.started_at',
                     'trips.ended_at',
@@ -110,7 +111,7 @@ class TripLogController extends Controller
             // 2. Fetch the GPS Timeline logs
             $trip->logs = DB::table('trip_logs')
                 ->where('trip_id', $id)
-                ->orderBy('phase', 'asc')
+                ->orderBy('id', 'asc')
                 ->get();
 
             // 3. Fetch any Emergency Incidents reported during this exact shift

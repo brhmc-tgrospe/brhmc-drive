@@ -11,5 +11,6 @@ jobs:
     
     steps:
       - name: Execute Deployment Script on VMWare
+        shell: cmd
         run: |
-          powershell.exe -File C:\laragon\www\deploy.ps1
+          powershell.exe -ExecutionPolicy Bypass -File C:\laragon\www\deploy.ps1

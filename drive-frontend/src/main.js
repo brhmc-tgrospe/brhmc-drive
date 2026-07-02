@@ -25,6 +25,7 @@ const Trips = () => import('./views/trips/TripIndex.vue');
 const ActivityLogs = () => import('./views/activityLogs/ActivityLogIndex.vue');
 const SystemHealth = () => import('./views/system/SystemHealth.vue');
 const ArchiveIndex = () => import('./views/ArchiveIndex.vue');
+const Maintenance = () => import('./views/Maintenance.vue');
 
 const routes = [
     { path: '/', component: Login, name: 'RootLogin', meta: { guest: true } },

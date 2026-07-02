@@ -57,6 +57,14 @@ apiClient.interceptors.response.use(
         return response;
     },
     (error) => {
+        // Check for Maintenance Mode
+        if (error.response && error.response.status === 503 && error.response.data?.code === 'MAINTENANCE_MODE') {
+            const authStore = useAuthStore();
+            authStore.clearAuth();
+            window.location.href = '/maintenance';
+            return Promise.reject(error);
+        }
+
         // If Laravel rejects the token (expired or invalid), kick the user out safely
         if (error.response && error.response.status === 401) {
             const authStore = useAuthStore();

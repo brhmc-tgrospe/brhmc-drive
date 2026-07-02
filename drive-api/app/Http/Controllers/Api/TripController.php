@@ -91,8 +91,9 @@ class TripController extends Controller
         $validated = $request->validate([
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
-            'action' => 'nullable|string|in:dispatch_from_base,arrive_destination,next_destination,return_base,arrive_base',
+            'action' => 'nullable|string|in:dispatch_from_base,arrive_destination,next_destination,return_base,arrive_base,standby_next_destination,end_shift',
             'destination' => 'nullable|string|max:255',
+            'intent' => 'nullable|string|in:standby,end_shift',
         ]);
 
         $trip = DB::table('trips')->where('id', $id)->whereNull('deleted_at')->first();
@@ -169,9 +170,10 @@ class TripController extends Controller
      *   Phase 2 -> 3 (dispatch_from_base: En Route with destination)
      *   Phase 3 -> 4 (arrive_destination: Arrived at destination)
      *   Phase 4 -> 3 (next_destination: Loop back En Route with NEW destination)
-     *   Phase 4 -> 5 (return_base: Returning to base)
-     *   Phase 5 -> 6 (arrive_base: Arrived at base, triggers Post-Trip)
-     *   Phase 6 -> 7 (Post-Trip inspection submitted)
+     *   Phase 4 -> 5 (return_base: Returning to base — with intent: standby or end_shift)
+     *   Phase 5 -> 6 (arrive_base: Arrived at base)
+     *   Phase 6 -> 3 (standby_next_destination: New destination from standby — loops back)
+     *   Phase 6 -> 7 (end_shift: Post-Trip inspection required)
      */
     private function advanceRegularPhase(Request $request, $trip, int $currentPhase, array $validated, $user, $shift)
     {
@@ -289,40 +291,78 @@ class TripController extends Controller
             ]);
         }
 
-        // Phase 4 -> Return to Base (Phase 5)
+        // Phase 4 -> Return to Base (Phase 5) — with intent tracking
         if ($currentPhase === 4 && $action === 'return_base') {
+            $intent = $validated['intent'] ?? 'end_shift';
+            $intentLabel = $intent === 'standby' ? 'Base (Standby)' : 'Base (End Shift)';
+            $actionLabel = $intent === 'standby' ? 'return_base_standby' : 'return_base_end_shift';
+
             \App\Models\Trip::where('id', $trip->id)->update([
                 'current_phase' => 5,
-                'current_destination' => null,
+                'current_destination' => $intentLabel,
             ]);
 
-            $this->logPhaseEntry($trip->id, 5, $validated, 'return_base', null);
+            $this->logPhaseEntry($trip->id, 5, $validated, $actionLabel, $intentLabel);
             $this->broadcastPhaseAdvance($trip->id, 5, $user);
 
-            activity()->causedBy($request->user())->performedOn(\App\Models\Trip::find($trip->id))->log('Returning to Base');
+            $logMessage = $intent === 'standby' ? 'Returning to Base (Standby)' : 'Returning to Base (End Shift)';
+            activity()->causedBy($request->user())->performedOn(\App\Models\Trip::find($trip->id))->log($logMessage);
             return response()->json([
-                'message' => 'Returning to base',
+                'message' => $logMessage,
                 'current_phase' => 5,
+                'current_destination' => $intentLabel,
             ]);
         }
 
-        // Phase 5 -> Arrive at Base (Phase 6) — triggers Post-Trip
+        // Phase 5 -> Arrive at Base (Phase 6)
         if ($currentPhase === 5 && $action === 'arrive_base') {
+            $isStandby = str_contains($trip->current_destination ?? '', 'Standby');
+            $actionLabel = $isStandby ? 'arrive_base_standby' : 'arrive_base_end_shift';
+
             \App\Models\Trip::where('id', $trip->id)->update([
                 'current_phase' => 6,
             ]);
 
-            $this->logPhaseEntry($trip->id, 6, $validated, 'arrive_base', null);
+            $this->logPhaseEntry($trip->id, 6, $validated, $actionLabel, null);
             $this->broadcastPhaseAdvance($trip->id, 6, $user);
 
-            activity()->causedBy($request->user())->performedOn(\App\Models\Trip::find($trip->id))->log('Arrived at Base');
+            $logMessage = $isStandby ? 'Arrived at Base (Standby)' : 'Arrived at Base (End Shift)';
+            activity()->causedBy($request->user())->performedOn(\App\Models\Trip::find($trip->id))->log($logMessage);
             return response()->json([
-                'message' => 'Arrived at base. Post-Trip Inspection required.',
+                'message' => $logMessage,
                 'current_phase' => 6,
             ]);
         }
 
-        // Phase 6 -> Post-Trip (Phase 7) — only triggered by checklist submission
+        // Phase 6: Standby at Base — driver can dispatch again or end shift
+        if ($currentPhase === 6 && $action === 'standby_next_destination') {
+            if (!$destination) {
+                return response()->json(['message' => 'Next destination is required.'], 422);
+            }
+
+            \App\Models\Trip::where('id', $trip->id)->update([
+                'current_phase' => 3,
+                'current_destination' => $destination,
+            ]);
+
+            $this->logPhaseEntry($trip->id, 3, $validated, 'standby_next_destination', $destination);
+            $this->broadcastPhaseAdvance($trip->id, 3, $user);
+
+            activity()->causedBy($request->user())->performedOn(\App\Models\Trip::find($trip->id))->log('Dispatched from Standby to: ' . $destination);
+            return response()->json([
+                'message' => 'En route to ' . $destination,
+                'current_phase' => 3,
+                'current_destination' => $destination,
+            ]);
+        }
+
+        // Phase 6: End Shift — triggers Post-Trip requirement
+        if ($currentPhase === 6 && $action === 'end_shift') {
+            $this->logPhaseEntry($trip->id, 6, $validated, 'standby_end_shift', null);
+            return response()->json(['message' => 'Post-Trip Inspection is required. Submit checklist to advance.'], 422);
+        }
+
+        // Phase 6: No action — prompt for Post-Trip (direct checklist submission path)
         if ($currentPhase === 6) {
             return response()->json(['message' => 'Post-Trip Inspection is required. Submit checklist to advance.'], 422);
         }

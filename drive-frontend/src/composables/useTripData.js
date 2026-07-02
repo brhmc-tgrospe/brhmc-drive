@@ -48,8 +48,26 @@ export function useTripData(props, onTripClosed = () => {}) {
             if (actionLabel === 'return_base') {
                 return 'Returning to Base';
             }
+            if (actionLabel === 'return_base_standby') {
+                return 'Returning to Base (Standby)';
+            }
+            if (actionLabel === 'return_base_end_shift') {
+                return 'Returning to Base (End Shift)';
+            }
             if (actionLabel === 'arrive_base') {
                 return 'Arrived at Base';
+            }
+            if (actionLabel === 'arrive_base_standby') {
+                return 'Arrived at Base (Standby)';
+            }
+            if (actionLabel === 'arrive_base_end_shift') {
+                return 'Arrived at Base (End Shift)';
+            }
+            if (actionLabel === 'standby_next_destination') {
+                return destination ? `Dispatched from Standby to ${destination}` : 'Dispatched from Standby';
+            }
+            if (actionLabel === 'standby_end_shift') {
+                return 'Shift Ended from Standby';
             }
             
             // Fallback for regular

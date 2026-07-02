@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\SystemSetting;
 
 class AuthController extends Controller
 {
@@ -26,6 +27,17 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Invalid login credentials provided.'
             ], 401);
+        }
+
+        // Maintenance Mode Check
+        $maintenanceSetting = SystemSetting::where('key', 'maintenance_mode')->first();
+        $isMaintenanceMode = $maintenanceSetting ? filter_var($maintenanceSetting->value, FILTER_VALIDATE_BOOLEAN) : false;
+
+        if ($isMaintenanceMode && strtolower($user->role) !== 'developer') {
+            return response()->json([
+                'message' => 'System is currently undergoing maintenance. Please try again later.',
+                'code' => 'MAINTENANCE_MODE'
+            ], 503);
         }
 
         // Generate the Sanctum Token

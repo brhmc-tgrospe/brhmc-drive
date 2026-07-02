@@ -16,12 +16,14 @@ use App\Http\Controllers\API\TelemetryController;
 use App\Http\Controllers\API\IncidentController;
 use App\Http\Controllers\API\TripLogController;
 use App\Http\Controllers\API\SystemHealthController;
+use App\Http\Controllers\API\SystemSettingController;
+use App\Http\Middleware\CheckMaintenanceMode;
 
 // Public Auth Route
 Route::post('/login', [AuthController::class, 'login']);
 
 // Protected Application Routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', CheckMaintenanceMode::class])->group(function () {
     
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/logout-timeout', [AuthController::class, 'logoutTimeout']);
@@ -116,6 +118,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/system-health/clear-log', [SystemHealthController::class, 'clearErrorLog']);
     Route::post('/system-health/backup', [SystemHealthController::class, 'triggerBackup']);
     Route::post('/system-health/backup-schedule', [SystemHealthController::class, 'updateSchedule']);
+
+    // SYSTEM SETTINGS ROUTES
+    Route::get('/settings', [SystemSettingController::class, 'index']);
+    Route::put('/settings', [SystemSettingController::class, 'update']);
 
     // ==========================================
     // ARCHIVE ROUTES

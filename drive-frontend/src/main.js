@@ -48,6 +48,12 @@ const routes = [
             { path: 'profile', component: Profile, name: 'Profile', meta: { requiresAuth: true } },
             { path: 'forbidden', component: Forbidden, name: 'Forbidden' },
         ]
+    },
+    { 
+        path: '/maintenance', 
+        name: 'maintenance',
+        component: Maintenance,
+        meta: { layout: 'none' }
     }
 ];
 

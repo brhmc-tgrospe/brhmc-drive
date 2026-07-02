@@ -206,6 +206,18 @@
                   {{ (isAdvancingPhase && activeActionType === 'return_base') ? 'Returning...' : 'Return to Base' }}
                 </button>
               </div>
+
+              <!-- Regular Trip: Arrived at Base (Phase 6) — Standby: show Next Destination + End Shift -->
+              <div v-else-if="tripType === 'REGULAR' && currentPhaseIndex === 6 && isStandbyAtBase && !isPostTripInspectionCompleted" class="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto">
+                <button @click="handleRegularAction('standby_next_destination')" :disabled="isAdvancingPhase" class="flex-1 py-5 sm:py-6 rounded-2xl font-black text-base sm:text-lg uppercase tracking-wider transition-all duration-300 transform active:scale-95 shadow-xl flex items-center justify-center gap-2 bg-teal-600 text-white hover:bg-teal-700 hover:-translate-y-1 shadow-teal-500/30 disabled:opacity-75 disabled:cursor-not-allowed">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                  Next Destination
+                </button>
+                <button @click="handleStandbyEndShift" :disabled="isAdvancingPhase" class="flex-1 py-5 sm:py-6 rounded-2xl font-black text-base sm:text-lg uppercase tracking-wider transition-all duration-300 transform active:scale-95 shadow-xl flex items-center justify-center gap-2 bg-red-600 text-white hover:bg-red-700 hover:-translate-y-1 shadow-red-500/30 disabled:opacity-75 disabled:cursor-not-allowed">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                  End Shift
+                </button>
+              </div>
               
               <!-- Default single action button -->
               <button v-else @click="advancePhase" :disabled="isAdvancingPhase" class="w-full max-w-xl mx-auto py-5 sm:py-6 rounded-2xl font-black text-lg sm:text-xl uppercase tracking-wider transition-all duration-300 transform active:scale-95 shadow-xl flex items-center justify-center disabled:opacity-75 disabled:cursor-not-allowed" :class="currentPhaseData.buttonClass">
@@ -269,6 +281,13 @@
       @close="showDestinationModal = false"
       @confirm="handleDestinationConfirm"
     />
+
+    <ReturnToBaseModal
+      :show="showReturnToBaseModal"
+      :loading="isReturnToBaseLoading"
+      @close="showReturnToBaseModal = false"
+      @confirm="handleReturnToBaseConfirm"
+    />
   </div>
 </template>
 
@@ -277,6 +296,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import ChecklistIssue from '../../views/checklists/ChecklistIssue.vue';
 import DriverChecklistModal from '../modals/DriverChecklistModal.vue';
 import DestinationModal from '../modals/DestinationModal.vue';
+import ReturnToBaseModal from '../modals/ReturnToBaseModal.vue';
 import { useToastStore } from '../../stores/toast';
 import api from '../../axios'; 
 
@@ -331,6 +351,16 @@ const destinationModalSubtitle = ref('Where is the vehicle heading?');
 let pendingDestinationAction = null;
 const isDestinationLoading = ref(false);
 
+// Return to Base Modal state
+const showReturnToBaseModal = ref(false);
+const isReturnToBaseLoading = ref(false);
+const returnToBaseIntent = ref(null);
+
+// Computed: is the driver in standby at base?
+const isStandbyAtBase = computed(() => {
+    return (currentDestination.value || '').includes('Standby');
+});
+
 // Computed: is current phase the post-trip phase?
 const isPostTripPhase = computed(() => {
     if (tripType.value === 'REGULAR') return currentPhaseIndex.value === 6;
@@ -361,8 +391,13 @@ const currentPhaseData = computed(() => {
             case 2: return { title: 'DISPATCH FROM BASE', buttonText: 'Set Destination & Dispatch', buttonClass: 'bg-purple-600 text-white hover:bg-purple-700 hover:-translate-y-1 shadow-lg shadow-purple-500/30', textColor: 'text-purple-400' };
             case 3: return { title: 'EN ROUTE', buttonText: `Arrived at ${currentDestination.value || 'Destination'}`, buttonClass: 'bg-pink-600 text-white hover:bg-pink-700 hover:-translate-y-1 shadow-lg shadow-pink-500/30', textColor: 'text-pink-400' };
             case 4: return { title: `ARRIVED AT ${(currentDestination.value || 'DESTINATION').toUpperCase()}`, buttonText: 'Choose Action', buttonClass: 'bg-rose-600 text-white', textColor: 'text-rose-400' };
-            case 5: return { title: 'RETURNING TO BASE', buttonText: 'Log Arrival at Base', buttonClass: 'bg-orange-600 text-white hover:bg-orange-700 hover:-translate-y-1 shadow-lg shadow-orange-500/30', textColor: 'text-orange-400' };
+            case 5: {
+                const isStandbyReturn = (currentDestination.value || '').includes('Standby');
+                const returnTitle = isStandbyReturn ? 'RETURNING TO BASE (STANDBY)' : 'RETURNING TO BASE (END SHIFT)';
+                return { title: returnTitle, buttonText: 'Log Arrival at Base', buttonClass: 'bg-orange-600 text-white hover:bg-orange-700 hover:-translate-y-1 shadow-lg shadow-orange-500/30', textColor: 'text-orange-400' };
+            }
             case 6:
+                if (isStandbyAtBase.value && !isPostTripInspectionCompleted.value) return { title: 'STANDBY AT BASE', buttonText: 'Choose Action', buttonClass: 'bg-amber-600 text-white', textColor: 'text-amber-400' };
                 if (!isPostTripInspectionCompleted.value) return { title: 'ARRIVED AT BASE', buttonText: 'Start Post-Trip Inspection', buttonClass: 'bg-emerald-600 text-white hover:bg-emerald-700 hover:-translate-y-1 shadow-lg shadow-emerald-500/30', textColor: 'text-emerald-500' };
                 return { title: 'FINAL TURNOVER PENDING', buttonText: 'Awaiting Final Clearance...', buttonClass: 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700', textColor: 'text-orange-400' };
             default: return { title: 'COMPLETED', buttonText: '', buttonClass: '', textColor: 'text-slate-400' };
@@ -473,7 +508,16 @@ const handleRegularAction = (action) => {
     }
 
     if (action === 'return_base') {
-        executeRegularAction('return_base', null);
+        showReturnToBaseModal.value = true;
+        return;
+    }
+
+    if (action === 'standby_next_destination') {
+        pendingDestinationAction = 'standby_next_destination';
+        destinationModalTitle.value = 'Next Destination';
+        destinationModalSubtitle.value = 'Where are you heading next?';
+        showDestinationModal.value = true;
+        return;
     }
 };
 
@@ -488,7 +532,7 @@ const handleDestinationConfirm = async (destination) => {
     }
 };
 
-const executeRegularAction = async (action, destination) => {
+const executeRegularAction = async (action, destination, intent = null) => {
     if (isAdvancingPhase.value) return;
     isAdvancingPhase.value = true;
     activeActionType.value = action;
@@ -504,6 +548,7 @@ const executeRegularAction = async (action, destination) => {
             action: action,
         };
         if (destination) payload.destination = destination;
+        if (intent) payload.intent = intent;
 
         const res = await api.post(`/api/trips/${localShift.value.trip.id}/advance`, payload);
         
@@ -518,6 +563,27 @@ const executeRegularAction = async (action, destination) => {
         isAdvancingPhase.value = false;
         activeActionType.value = null;
     }
+};
+
+const handleReturnToBaseConfirm = async (intent) => {
+    isReturnToBaseLoading.value = true;
+    try {
+        await executeRegularAction('return_base', null, intent);
+    } finally {
+        isReturnToBaseLoading.value = false;
+        showReturnToBaseModal.value = false;
+    }
+};
+
+const handleStandbyEndShift = async () => {
+    // Log end_shift action, then open post-trip checklist
+    try {
+        await executeRegularAction('end_shift', null);
+    } catch (e) {
+        // Expected 422 — post-trip required
+    }
+    checklistType.value = 'Post-Trip';
+    showChecklistModal.value = true;
 };
 
 const advancePhase = async () => {
@@ -570,8 +636,13 @@ const advancePhase = async () => {
             return;
         }
 
-        // Phase 6: Post-Trip inspection
+        // Phase 6: Standby at Base or Post-Trip
         if (currentPhaseIndex.value === 6) {
+            // Standby mode: handled by split buttons in template
+            if (isStandbyAtBase.value && !isPostTripInspectionCompleted.value) {
+                return; // Split buttons handle this
+            }
+            // End Shift mode: open post-trip checklist
             if (!isPostTripInspectionCompleted.value) {
                 checklistType.value = 'Post-Trip';
                 showChecklistModal.value = true;

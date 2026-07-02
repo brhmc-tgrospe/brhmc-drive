@@ -142,7 +142,7 @@
                 <h3 class="font-bold text-slate-800 text-sm">Maintenance Mode</h3>
                 <p class="text-xs text-slate-500 mt-0.5">Locks out drivers and dispatchers. Only developers can login.</p>
               </div>
-              <button @click="settings.maintenance = !settings.maintenance" :class="settings.maintenance ? 'bg-red-600' : 'bg-slate-200'" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none">
+              <button @click="toggleMaintenanceMode" :disabled="isSavingSettings" :class="settings.maintenance ? 'bg-red-600' : 'bg-slate-200'" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50">
                 <span :class="settings.maintenance ? 'translate-x-6' : 'translate-x-1'" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"></span>
               </button>
             </div>
@@ -161,7 +161,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import { useToastStore } from '../../stores/toast';
 import axios from '../../axios';
@@ -185,11 +185,50 @@ const availableTabs = computed(() => {
 });
 
 const settings = ref({ theme: 'light', language: 'en', push: true, maintenance: false });
+const isSavingSettings = ref(false);
 
 const showCurrentPassword = ref(false);
 const showNewPassword = ref(false);
 const showConfirmPassword = ref(false);
 const isSavingPassword = ref(false);
+
+onMounted(async () => {
+  if (authStore.user?.username === 'developer') {
+    try {
+      const response = await axios.get('/api/settings');
+      if (response.data && response.data.maintenance_mode !== undefined) {
+        settings.value.maintenance = response.data.maintenance_mode;
+      }
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+    }
+  }
+});
+
+const toggleMaintenanceMode = async () => {
+  const newValue = !settings.value.maintenance;
+  
+  if (newValue && !confirm('Are you sure you want to enable Maintenance Mode? All non-developer sessions will be interrupted immediately.')) {
+    return;
+  }
+  
+  // Optimistically update UI
+  settings.value.maintenance = newValue;
+  isSavingSettings.value = true;
+  
+  try {
+    await axios.put('/api/settings', {
+      settings: { maintenance_mode: newValue }
+    });
+    toastStore.show(newValue ? 'Maintenance Mode Enabled' : 'Maintenance Mode Disabled', newValue ? 'warning' : 'success');
+  } catch (error) {
+    // Revert on failure
+    settings.value.maintenance = !newValue;
+    toastStore.show('Failed to update maintenance mode', 'error');
+  } finally {
+    isSavingSettings.value = false;
+  }
+};
 
 const passwordForm = ref({
   current_password: '',

@@ -1,3 +1,5 @@
+$ErrorActionPreference = "Continue"
+
 Write-Host "Starting Monorepo Deployment..." -ForegroundColor Green
 
 # Ensure we are in the repository root
@@ -5,12 +7,12 @@ Set-Location -Path "C:\laragon\www"
 
 # Pull latest changes from the main branch
 Write-Host "Pulling latest code from GitHub..." -ForegroundColor Cyan
-git pull origin main
+git pull origin main --quiet
 
 # Deploy API
 Write-Host "Deploying Laravel API..." -ForegroundColor Cyan
 Set-Location -Path "C:\laragon\www\drive-api"
-composer install --no-interaction --prefer-dist --optimize-autoloader
+composer install --no-interaction --prefer-dist --optimize-autoloader --quiet
 php artisan migrate --force
 php artisan optimize:clear
 php artisan config:cache
@@ -18,7 +20,7 @@ php artisan config:cache
 # Deploy Frontend
 Write-Host "Deploying Vue 3 Frontend..." -ForegroundColor Cyan
 Set-Location -Path "C:\laragon\www\drive-frontend"
-npm install
-npm run build
+npm install --silent
+npm run build --silent
 
 Write-Host "Deployment Completed Successfully!" -ForegroundColor Green
